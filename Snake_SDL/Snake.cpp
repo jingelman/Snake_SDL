@@ -5,24 +5,56 @@
 
 Snake::Snake()
 {
-	gameAreaBackground = { SCREEN_WIDTH / 10, SCREEN_HEIGHT / 15, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+	int border = 50;
 
-	stretchBackground = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+	recGameArea = { border, border, GAMEAREA_WIDTH, GAMEAREA_HEIGHT };
 
-	snakeBody.reserve(SCREEN_WIDTH*SCREEN_HEIGHT);
+	recBackground = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+
+	recSnakeHeads.push_back({ 3 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeHeads.push_back({ 4 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeHeads.push_back({ 3 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeHeads.push_back({ 4 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+
+	recSnakeTails.push_back({ 3 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeTails.push_back({ 4 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeTails.push_back({ 3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeTails.push_back({ 4 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+
+	recSnakeBody.push_back({ 0 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeBody.push_back({ 1 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeBody.push_back({ 2 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeBody.push_back({ 0 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeBody.push_back({ 2 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnakeBody.push_back({ 2 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	
+	recApple = { 4 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE };
+
+	recSnake.push_back({ 5 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnake.push_back({ 4 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnake.push_back({ 3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+
+	direction = Direction::RIGHT;
+
 }
 
 
 Snake::~Snake()
 {
-	SDL_DestroyTexture(gTexture.mTexture);
-	gTexture.mTexture = nullptr;
+	SDL_DestroyTexture(texSprites.mTexture);
+	texSprites.mTexture = nullptr;
 
-	SDL_DestroyRenderer(gRenderer);
-	gRenderer = nullptr;
+	SDL_DestroyTexture(texBackground.mTexture);
+	texBackground.mTexture = nullptr;
 
-	SDL_DestroyWindow(gwindow);
-	gwindow = nullptr;
+	SDL_DestroyTexture(texGrass.mTexture);
+	texGrass.mTexture = nullptr;
+
+	SDL_DestroyRenderer(mRenderer);
+	mRenderer = nullptr;
+
+	SDL_DestroyWindow(mWindow);
+	mWindow = nullptr;
 
 	IMG_Quit();
 	SDL_Quit();
@@ -46,8 +78,8 @@ bool Snake::init()
 			printf("Warning: Linear texture filtering not enabled!");
 		}
 
-		gwindow = SDL_CreateWindow("Snake WoW!", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (gwindow == nullptr)
+		mWindow = SDL_CreateWindow("Snake WoW!", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (mWindow == nullptr)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
 			success = false;
@@ -55,29 +87,54 @@ bool Snake::init()
 		else
 		{
 			//Create renderer for window
-			gRenderer = SDL_CreateRenderer(gwindow, -1, SDL_RENDERER_ACCELERATED);
-			if(gRenderer == nullptr)
+			mRenderer = SDL_CreateRenderer(mWindow, -1, SDL_RENDERER_ACCELERATED);
+			if(mRenderer == nullptr)
 			{
 				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 				success = false;
 			}
 			else
 			{
-				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				SDL_SetRenderDrawColor(mRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
-				//Initialize PNG loading
-				int imgFlags = IMG_INIT_PNG;
+				int imgFlags = getImageType(pathToBackground);
 				if (!(IMG_Init(imgFlags) & imgFlags))
 				{
 					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
 					success = false;
 				}
-			}		//Load media
-			if (!loadMedia(path))
-			{
-				printf("Failed to load media!\n");
-			}
+				
+				//Load media
+				if (!loadMedia(texBackground, pathToBackground))
+				{
+					printf("Failed to load media!\n");
+				}
+				
+				imgFlags = getImageType(pathTograss);
+				if (!(IMG_Init(imgFlags) & imgFlags))
+				{
+					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+					success = false;
+				}
 
+				if (!loadMedia(texGrass, pathTograss))
+				{
+					printf("Failed to load media!\n");
+				}
+
+				imgFlags = getImageType(pathToSprite);
+				if (!(IMG_Init(imgFlags) & imgFlags))
+				{
+					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+					success = false;
+				}
+
+				if (!loadMedia(texSprites, pathToSprite))
+				{
+					printf("Failed to load media!\n");
+				}
+			}
+			
 		}
 	}
 
@@ -98,21 +155,96 @@ void Snake::gameLoop()
 		}
 
 		//Clear screen
-		SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		SDL_RenderClear(gRenderer);
+		SDL_SetRenderDrawColor(mRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+		SDL_RenderClear(mRenderer);
 
-		SDL_RenderSetViewport(gRenderer, &stretchBackground);
+		SDL_RenderSetViewport(mRenderer, &recBackground);
 
-		//Render texture to screen
-		SDL_RenderCopy(gRenderer, gTexture.mTexture, NULL, NULL);
 
-		SDL_RenderSetViewport(gRenderer, &gameAreaBackground);
+		//Render background to screen
+		SDL_RenderCopy(mRenderer, texBackground.mTexture, NULL, NULL);
 
-		//Render texture to screen
-		SDL_RenderCopy(gRenderer, gTexture.mTexture, NULL, NULL);
+		SDL_RenderSetViewport(mRenderer, &recGameArea);
+
+
+
+		//Render grass to screen
+		SDL_RenderCopy(mRenderer, texGrass.mTexture, NULL, NULL);
+
+		// Render snake
+
+		for(int i = 0; i < recSnake.size(); ++i)
+		{
+			if(i == 0)
+			{
+				if(direction == Direction::UP)
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeHeads[0], &recSnake[i]);
+				else if(direction == Direction::RIGHT)
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeHeads[1], &recSnake[i]);
+				else if(direction == Direction::LEFT)
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeHeads[2], &recSnake[i]);
+				else 
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeHeads[3], &recSnake[i]);
+
+			}
+			else if(i == recSnake.size()-1)
+			{
+				if (recSnake[i].x == recSnake[i-1].x && recSnake[i].y > recSnake[i - 1].y)				// up
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeTails[0], &recSnake[i]);
+				else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y)		// right
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeTails[1], &recSnake[i]);
+				else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y)		// left
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeTails[2], &recSnake[i]);
+				else
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeTails[3], &recSnake[i]);	// down
+			}
+			else
+			{
+			//TODO check direction
+				if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // left-up
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[3], &recSnake[i]);
+				
+				else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // left-left
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[1], &recSnake[i]);
+				
+				else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y) // up-left
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[2], &recSnake[i]);
+				
+				else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y) // up-up
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[4], &recSnake[i]);
+				
+				else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y) // up-right
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[0], &recSnake[i]);
+					
+				else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // left-down
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[0], &recSnake[i]);
+				
+				else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y) // down-down
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[4], &recSnake[i]);
+				
+				 else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // right-right
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[1], &recSnake[i]);
+				
+				 else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // down-right
+					 SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[2], &recSnake[i]);
+					
+				 else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // right-up
+					SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[5], &recSnake[i]);
+
+				 else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y) // down-right
+					 SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[3], &recSnake[i]);
+				
+				 else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y) // down-left
+					 SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[5], &recSnake[i]);
+
+			}
+
+		}
+		
+		SDL_RenderSetViewport(mRenderer, &recGameArea);
 
 		//Update screen
-		SDL_RenderPresent(gRenderer);
+		SDL_RenderPresent(mRenderer);
 	}
 }
 
@@ -125,16 +257,72 @@ void Snake::keyPress(SDL_Keycode e)
 		quit = true;
 		break;
 	case SDLK_UP:
+		auto isSameDirection = recSnake[0];
+		isSameDirection.y -= SPRITE_SIZE;
+
+		if (isSameDirection.x == recSnake[1].x && isSameDirection.y == recSnake[1].y)
+			break;
+
 		printf("Going up!\n");
-		break;
-	case SDLK_DOWN:
-		printf("Going down!\n");
-		break;
-	case SDLK_LEFT:
-		printf("Going left!\n");
+		direction = Direction::UP;
+
+		for(int i = recSnake.size() - 1; i > 0; --i)
+		{
+			recSnake[i] = recSnake[i-1];
+		}
+		recSnake[0].y -= SPRITE_SIZE;
+		
 		break;
 	case SDLK_RIGHT:
+		isSameDirection = recSnake[0];
+		isSameDirection.x += SPRITE_SIZE;
+
+		if (isSameDirection.x == recSnake[1].x && isSameDirection.y == recSnake[1].y)
+			break;
+
 		printf("Going right!\n");
+		direction = Direction::RIGHT;
+
+		for (int i = recSnake.size() - 1; i > 0; --i)
+		{
+			recSnake[i] = recSnake[i - 1];
+		}
+		recSnake[0].x += SPRITE_SIZE;
+
+		break;
+	case SDLK_LEFT:
+		isSameDirection = recSnake[0];
+		isSameDirection.x -= SPRITE_SIZE;
+
+		if (isSameDirection.x == recSnake[1].x && isSameDirection.y == recSnake[1].y)
+			break;
+
+		printf("Going left!\n");
+		direction = Direction::LEFT;
+
+		for (int i = recSnake.size() - 1; i > 0; --i)
+		{
+			recSnake[i] = recSnake[i - 1];
+		}
+		recSnake[0].x -= SPRITE_SIZE;
+
+		break;
+	case SDLK_DOWN:
+		isSameDirection = recSnake[0];
+		isSameDirection.y += SPRITE_SIZE;
+
+		if (isSameDirection.x == recSnake[1].x && isSameDirection.y == recSnake[1].y)
+			break;
+
+		printf("Going down!\n");
+		direction = Direction::DOWN;
+
+		for (int i = recSnake.size() - 1; i > 0; --i)
+		{
+			recSnake[i] = recSnake[i - 1];
+		}
+		recSnake[0].y += SPRITE_SIZE;
+
 		break;
 	default:
 		break;
@@ -142,17 +330,18 @@ void Snake::keyPress(SDL_Keycode e)
 }
 
 
-bool Snake::loadMedia(const std::string &path)
+bool Snake::loadMedia(Texture &texture,const std::string &path) const
 {
 	bool success = true;
 
-	loadFromFile(gTexture, gRenderer, path);
-	if (gTexture.mTexture == nullptr)
+	loadFromFile(texture, mRenderer, path);
+	if (texture.mTexture == nullptr)
 	{
 		printf("Unable to load image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
 		success = false;
 	}
 	
+
 	return success;
 }
 
@@ -164,10 +353,11 @@ bool Snake::hitWall(Position nextPos) const
 	return false;
 }
 
-
+/*
 bool Snake::hitBody(Position nextPos) const
 {
-	for(const auto &pos : snakeBody)
+	
+	for(const auto &pos : snake)
 	{
 		if (pos.x == nextPos.x && pos.y == nextPos.y)
 			return true;
@@ -175,3 +365,5 @@ bool Snake::hitBody(Position nextPos) const
 	
 	return false;
 }
+
+*/
