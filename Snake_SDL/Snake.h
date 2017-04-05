@@ -6,10 +6,6 @@
 
 #include <vector>
 
-struct Position
-{
-	uint8_t x, y;
-};
 
 enum class Direction
 {
@@ -42,7 +38,7 @@ private:
 	SDL_Rect recBackground;
 	SDL_Rect recGameArea;
 	std::vector<SDL_Rect> recSnake;
-	SDL_Rect recApple;
+	SDL_Rect recApple, recApple_pos;
 
 	std::vector<SDL_Rect> recSnakeHeads;
 	std::vector<SDL_Rect> recSnakeTails;
@@ -52,13 +48,11 @@ private:
 
 	uint8_t apples = 0;
 
-	Position applePos;
-
 	Direction direction;
 
-	const std::string pathToBackground = "resource/backgrund.jpg";
-	const std::string pathToSprite = "resource/sprites.png";
-	const std::string pathTograss = "resource/grass.jpg";
+	const char* pathToBackground = "resource/backgrund.jpg";
+	const char* pathToSprite = "resource/sprites.png";
+	const char* pathTograss = "resource/grass.jpg";
 
 	const int SCREEN_WIDTH = 1280;
 	const int SCREEN_HEIGHT = 800;
@@ -73,21 +67,26 @@ private:
 
 	bool loadMedia(Texture &texture, const std::string &path) const;
 
-	bool hitWall(Position nextPos) const;
-	bool hitBody(Position nextPos) const;
+	SDL_Rect addApple();
 
-	void hitApple() { ++apples; };
+	bool hitApple(const int x, const int y) const;
 
 };
 
-
-
-inline IMG_InitFlags getImageType(const std::string &path)
+inline IMG_InitFlags getImageType(const char* path)
 {
-	auto extension = path.substr(path.find_last_of(".") + 1);
+	int index = -1;
+	for(int i = strlen(path) - 1; i >= 0  ; --i)
+	{
+		if (path[i] == '.')
+		{
+			index = i;
+			break;
+		}
+	}
 
-	if (extension == "png")
+	if (path + index == "png")
 		return IMG_INIT_PNG;
-	if (extension == "jpg")
+	if (path + index == "jpg")
 		return IMG_INIT_JPG;
 }
