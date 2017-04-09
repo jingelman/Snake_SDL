@@ -32,10 +32,16 @@ inline bool isTimerPaused(Timer &t)
 	return t.isPaused;
 }
 
+inline bool isTimerStoped(Timer &t)
+{
+	return t.isPaused;
+}
+
+
 inline void stopTimer(Timer &t)
 {
 	t.isStarted = false;
-	t.isPaused = true;
+	t.isPaused = false;
 
 	t.startTicks = 0;
 	t.pausedTicks = 0;

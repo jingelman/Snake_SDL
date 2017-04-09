@@ -128,6 +128,8 @@
     <ClCompile Include="Snake.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Music.h" />
+    <ClInclude Include="soundEffect.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Snake.h" />
     <ClInclude Include="Timer.h" />

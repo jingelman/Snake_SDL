@@ -6,6 +6,8 @@
 
 #include <vector>
 #include "Timer.h"
+#include "Music.h"
+#include "soundEffect.h"
 
 
 enum class Direction
@@ -22,6 +24,7 @@ public:
 	bool init();
 	void setupGame();
 	void render();
+	bool loadMedia_new();
 
 	void gameLoop();
 	void move(Direction dir);
@@ -49,6 +52,10 @@ private:
 	std::vector<SDL_Rect> recSnakeBody;
 
 	SDL_Event event;
+	
+	Music music;
+	SoundEffect appleEffect;
+	SoundEffect loseEffect;
 
 	uint8_t apples = 0;
 
@@ -56,9 +63,13 @@ private:
 	Timer timer;
 	Uint32 countedFrames = 0;
 
-	const char* pathToBackground = "resource/backgrund.jpg";
-	const char* pathToSprite = "resource/sprites.png";
-	const char* pathTograss = "resource/grass.jpg";
+	const char* pathToBackground = "resource/texture/backgrund.jpg";
+	const char* pathToSprite = "resource/texture/sprites.png";
+	const char* pathTograss = "resource/texture/grass.jpg";
+
+	const char* pathToMusic = "resource/sound/369920__mrthenoronha__cartoon-game-theme-loop.wav";
+	const char* pathToLoseEffect = "resource/sound/362375__shapingwaves__sw001-8-bit-games-music-element-fail-01-arp.wav";
+	const char* pathToEatEffect = "resource/sound/20265__koops__apple-crunch-02.wav";
 
 	const int SCREEN_WIDTH = 1280;
 	const int SCREEN_HEIGHT = 800;
@@ -72,10 +83,11 @@ private:
 	void keyPress(SDL_Keycode e);
 
 	bool loadMedia(Texture &texture, const std::string &path) const;
+	
 
 	SDL_Rect addApple();
-	void hitWall(const SDL_Rect &head);
-	void Snake::hitBody(const std::vector<SDL_Rect> &snake);
+	bool hitWall(const SDL_Rect &head);
+	bool Snake::hitBody(const std::vector<SDL_Rect> &snake);
 
 	bool hitApple(const int x, const int y) const;
 

@@ -1,15 +1,18 @@
 ﻿#include "Snake.h"
 
 #include <SDL_image.h>
+#include "SoundEffect.h"
+#include "Music.h"
+
 #include <stdio.h>
 #include <random>
 
 std::uniform_int_distribution<int> distributionX(0, 11);
 std::uniform_int_distribution<int> distributionY(0, 10);
 
-#define SLOW_FRAMERATE 10
-#define MEDIUM_FRAMERATE 13
-#define FAST_FRAMERATE 16
+#define SLOW_FRAMERATE 7
+#define MEDIUM_FRAMERATE 10
+#define FAST_FRAMERATE 13
 
 Snake::Snake()
 {
@@ -57,6 +60,10 @@ Snake::~Snake()
 	SDL_DestroyWindow(mWindow);
 	mWindow = nullptr;
 
+	freeMusic(music);
+	freeSoundEffect(appleEffect);
+	freeSoundEffect(loseEffect);
+
 	IMG_Quit();
 	SDL_Quit();
 }
@@ -69,7 +76,7 @@ bool Snake::init()
 	startTimer(timer);
 	setFrameCap(timer, true);
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)  < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		success = false;
@@ -137,6 +144,8 @@ bool Snake::init()
 				{
 					printf("Failed to load media!\n");
 				}
+
+				initSound();
 			}
 		}
 	}
@@ -179,16 +188,29 @@ void Snake::gameLoop()
 			SDL_Delay(1000 / MEDIUM_FRAMERATE - getTicks(timer));
 		}
 
-
-		if (!isTimerPaused(timer))
+		if(isTimerStarted(timer))
 		{
+			startTimer(timer);
 
-			move(direction);
-			render();
+			if (!isMusicPlaying() || !isMusicPaused())
+			{
+				playMusic(music);
+			}
+
+			if (!isTimerPaused(timer))
+			{
+				if(!hitWall(recSnake[0]) && !hitBody(recSnake))
+				{
+					move(direction);
+					render();
+				}
+				else
+				{
+					stopTimer(timer);
+					Mix_PauseMusic();
+				}				
+			}
 		}
-
-		hitWall(recSnake[0]);
-		hitBody(recSnake);
 
 		++countedFrames;
 	}
@@ -196,8 +218,6 @@ void Snake::gameLoop()
 
 void Snake::render()
 {
-	startTimer(timer);
-
 	//Clear screen
 	SDL_SetRenderDrawColor(mRenderer, 255, 255, 255, 255);
 	SDL_RenderClear(mRenderer);
@@ -209,7 +229,6 @@ void Snake::render()
 	SDL_RenderCopy(mRenderer, texGrass.mTexture, nullptr, nullptr);
 
 	// Render snake
-
 	for (int i = 0; i < recSnake.size(); ++i)
 	{
 		if (i == 0)
@@ -274,7 +293,6 @@ void Snake::render()
 				SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[5], &recSnake[i]);
 		}
 	}
-
 	
 	SDL_RenderCopy(mRenderer, texSprites.mTexture, &recApple, &recApple_pos);
 	SDL_RenderSetViewport(mRenderer, &recGameArea);
@@ -300,6 +318,7 @@ void Snake::move(Direction dir)
 
 		if (hitApple(recSnake[0].x, recSnake[0].y))
 		{
+			playEffect(appleEffect);
 			recApple_pos = addApple();
 			recSnake.push_back(temp);
 		}
@@ -318,6 +337,7 @@ void Snake::move(Direction dir)
 
 		if (hitApple(recSnake[0].x, recSnake[0].y))
 		{
+			playEffect(appleEffect);
 			recApple_pos = addApple();
 			recSnake.push_back(temp);
 		}
@@ -336,6 +356,7 @@ void Snake::move(Direction dir)
 
 		if (hitApple(recSnake[0].x, recSnake[0].y))
 		{
+			playEffect(appleEffect);
 			recApple_pos = addApple();
 			recSnake.push_back(temp);
 		}
@@ -354,6 +375,7 @@ void Snake::move(Direction dir)
 
 		if (hitApple(recSnake[0].x, recSnake[0].y))
 		{
+			playEffect(appleEffect);
 			recApple_pos = addApple();
 			recSnake.push_back(temp);
 		}
@@ -387,10 +409,16 @@ void Snake::keyPress(SDL_Keycode e)
 			direction = Direction::DOWN;
 		break;
 	case SDLK_p:
-		if (isTimerPaused(timer))
-			unPauseTimer(timer);
+		if (!isTimerStarted(timer) && isTimerPaused(timer))
+		{
+			unPauseTimer(timer); 
+			Mix_ResumeMusic();
+		}
 		else
-			pauseTimer(timer);
+		{
+			pauseTimer(timer); 
+			Mix_PauseMusic();
+		}
 		break;
 	case SDLK_SPACE:
 		startTimer(timer);
@@ -414,6 +442,22 @@ bool Snake::loadMedia(Texture& texture, const std::string& path) const
 		printf("Unable to load image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
 		success = false;
 	}
+
+	return success;
+}
+
+bool Snake::loadMedia_new()
+{
+	bool success = true;
+
+	if (!loadMusic(music, pathToMusic))
+		success = false;
+
+	if (!loadEffect(appleEffect, pathToEatEffect))
+		success = false;
+
+	//if (!loadEffect(loseEffect, pathToLoseEffect))
+	//	success = false;
 
 	return success;
 }
@@ -454,17 +498,22 @@ bool Snake::hitApple(const int x, const int y) const
 }
 
 
-void Snake::hitWall(const SDL_Rect& head)
+bool Snake::hitWall(const SDL_Rect& head)
 {
+	bool hit = false;
+
 	if (head.x < 0 || head.y < 0 || head.x + head.w > GAMEAREA_WIDTH || head.y + head.h > GAMEAREA_HEIGHT)
 	{
-		stopTimer(timer);
 		printf("You hit the wall! \n");
+		hit = true;
 	}
+
+	return hit;
 }
 
-void Snake::hitBody(const std::vector<SDL_Rect>& snake)
+bool Snake::hitBody(const std::vector<SDL_Rect>& snake)
 {
+	bool hit = false;
 	const auto& head = snake[0];
 
 	for (auto p = 1; p < recSnake.size() - 1; ++p)
@@ -472,8 +521,10 @@ void Snake::hitBody(const std::vector<SDL_Rect>& snake)
 		auto& snakePart = recSnake[p];
 		if (snakePart.x == head.x && snakePart.y == head.y)
 		{
-			stopTimer(timer);
 			printf("You hit your own body! \n");
+			hit = true;
 		}
 	}
+
+	return hit;
 }
