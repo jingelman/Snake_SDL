@@ -124,11 +124,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Snake.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Music.h" />
+    <ClInclude Include="RandomGenerator.h" />
     <ClInclude Include="soundEffect.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Snake.h" />

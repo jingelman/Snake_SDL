@@ -12,33 +12,31 @@ struct Timer
 	bool isFrameCap = false;
 };
 
-inline void startTimer(Timer &t)
+inline void startTimer(Timer& t)
 {
 	t.isStarted = true;
 	t.isPaused = false;
 
 	t.startTicks = SDL_GetTicks();
 	t.pausedTicks = 0;
-
 }
 
-inline bool isTimerStarted(Timer &t)
+inline bool isTimerStarted(Timer& t)
 {
 	return t.isStarted;
 }
 
-inline bool isTimerPaused(Timer &t)
+inline bool isTimerPaused(Timer& t)
 {
 	return t.isPaused;
 }
 
-inline bool isTimerStoped(Timer &t)
+inline bool isTimerStoped(Timer& t)
 {
 	return t.isPaused;
 }
 
-
-inline void stopTimer(Timer &t)
+inline void stopTimer(Timer& t)
 {
 	t.isStarted = false;
 	t.isPaused = false;
@@ -47,7 +45,7 @@ inline void stopTimer(Timer &t)
 	t.pausedTicks = 0;
 }
 
-inline void pauseTimer(Timer &t)
+inline void pauseTimer(Timer& t)
 {
 	t.isStarted = false;
 	t.isPaused = true;
@@ -56,16 +54,16 @@ inline void pauseTimer(Timer &t)
 	t.startTicks = 0;
 }
 
-inline void unPauseTimer(Timer &t)
+inline void unPauseTimer(Timer& t)
 {
 	t.isStarted = true;
 	t.isPaused = false;
 
 	t.startTicks = SDL_GetTicks() - t.pausedTicks;
-	t.pausedTicks = 0;	
+	t.pausedTicks = 0;
 }
 
-inline Uint32 getTicks(Timer &t)
+inline Uint32 getTicks(Timer& t)
 {
 	Uint32 time = 0;
 
@@ -74,16 +72,16 @@ inline Uint32 getTicks(Timer &t)
 			time = t.pausedTicks;
 		else
 			time = SDL_GetTicks() - t.startTicks;
-		
+
 	return time;
 }
 
-inline void setFrameCap(Timer &t, bool cap)
+inline void setFrameCap(Timer& t, bool cap)
 {
 	t.isFrameCap = cap;
 }
 
-inline bool isFrameCap(Timer &t)
+inline bool isFrameCap(Timer& t)
 {
 	return t.isFrameCap;
 }

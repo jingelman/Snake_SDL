@@ -1,18 +1,24 @@
 ﻿#include "Snake.h"
 
 #include <SDL_image.h>
+
 #include "SoundEffect.h"
 #include "Music.h"
+#include "Texture.h"
+#include "RandomGenerator.h"
 
 #include <stdio.h>
-#include <random>
-
-std::uniform_int_distribution<int> distributionX(0, 11);
-std::uniform_int_distribution<int> distributionY(0, 10);
 
 #define SLOW_FRAMERATE 7
 #define MEDIUM_FRAMERATE 10
 #define FAST_FRAMERATE 13
+
+enum RENDERQUALITY
+{
+	NEAREST,
+	LINEAR,
+	ANISOTROPIC
+};
 
 Snake::Snake()
 {
@@ -45,24 +51,19 @@ Snake::Snake()
 
 Snake::~Snake()
 {
-	SDL_DestroyTexture(texSprites.mTexture);
-	texSprites.mTexture = nullptr;
+	freeMusic(music);
+	freeSoundEffect(appleEffect);
+	//freeSoundEffect(loseEffect);
 
-	SDL_DestroyTexture(texBackground.mTexture);
-	texBackground.mTexture = nullptr;
-
-	SDL_DestroyTexture(texGrass.mTexture);
-	texGrass.mTexture = nullptr;
+	freeTexture(texSprites);
+	freeTexture(texBackground);
+	freeTexture(texGrass);
 
 	SDL_DestroyRenderer(mRenderer);
 	mRenderer = nullptr;
 
 	SDL_DestroyWindow(mWindow);
 	mWindow = nullptr;
-
-	freeMusic(music);
-	freeSoundEffect(appleEffect);
-	freeSoundEffect(loseEffect);
 
 	IMG_Quit();
 	SDL_Quit();
@@ -76,18 +77,14 @@ bool Snake::init()
 	startTimer(timer);
 	setFrameCap(timer, true);
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)  < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		success = false;
 	}
 	else
 	{
-		//Set texture filtering to linear
-		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
-		{
-			printf("Warning: Linear texture filtering not enabled!");
-		}
+		setRenderQuality(LINEAR);
 
 		mWindow = SDL_CreateWindow("Snake WoW!", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if (mWindow == nullptr)
@@ -108,44 +105,23 @@ bool Snake::init()
 			{
 				SDL_SetRenderDrawColor(mRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
-				int imgFlags = getImageType(pathToBackground);
-				if (!(IMG_Init(imgFlags) & imgFlags))
-				{
-					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+				if (!initTexture(pathToBackground))
 					success = false;
-				}
-
-				//Load media
-				if (!loadMedia(texBackground, pathToBackground))
-				{
-					printf("Failed to load media!\n");
-				}
-
-				imgFlags = getImageType(pathTograss);
-				if (!(IMG_Init(imgFlags) & imgFlags))
-				{
-					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+				if (!loadTexture(texBackground, mRenderer, pathToBackground))
 					success = false;
-				}
 
-				if (!loadMedia(texGrass, pathTograss))
-				{
-					printf("Failed to load media!\n");
-				}
-
-				imgFlags = getImageType(pathToSprite);
-				if (!(IMG_Init(imgFlags) & imgFlags))
-				{
-					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+				if (!initTexture(pathTograss))
 					success = false;
-				}
+				if (!loadTexture(texGrass, mRenderer, pathTograss))
+					success = false;
 
-				if (!loadMedia(texSprites, pathToSprite))
-				{
-					printf("Failed to load media!\n");
-				}
+				if (!initTexture(pathToSprite))
+					success = false;
+				if (!loadTexture(texSprites, mRenderer, pathToSprite))
+					success = false;
 
-				initSound();
+				if (!initSound())
+					success = false;
 			}
 		}
 	}
@@ -188,7 +164,7 @@ void Snake::gameLoop()
 			SDL_Delay(1000 / MEDIUM_FRAMERATE - getTicks(timer));
 		}
 
-		if(isTimerStarted(timer))
+		if (isTimerStarted(timer))
 		{
 			startTimer(timer);
 
@@ -199,16 +175,16 @@ void Snake::gameLoop()
 
 			if (!isTimerPaused(timer))
 			{
-				if(!hitWall(recSnake[0]) && !hitBody(recSnake))
+				if (!hitWall(recSnake[0]) && !hitBody(recSnake))
 				{
-					move(direction);
+					updatePos(direction);
 					render();
 				}
 				else
 				{
 					stopTimer(timer);
 					Mix_PauseMusic();
-				}				
+				}
 			}
 		}
 
@@ -225,7 +201,7 @@ void Snake::render()
 
 	SDL_RenderCopy(mRenderer, texBackground.mTexture, nullptr, nullptr);
 	SDL_RenderSetViewport(mRenderer, &recGameArea);
-	
+
 	SDL_RenderCopy(mRenderer, texGrass.mTexture, nullptr, nullptr);
 
 	// Render snake
@@ -293,7 +269,7 @@ void Snake::render()
 				SDL_RenderCopy(mRenderer, texSprites.mTexture, &recSnakeBody[5], &recSnake[i]);
 		}
 	}
-	
+
 	SDL_RenderCopy(mRenderer, texSprites.mTexture, &recApple, &recApple_pos);
 	SDL_RenderSetViewport(mRenderer, &recGameArea);
 
@@ -301,7 +277,7 @@ void Snake::render()
 	SDL_RenderPresent(mRenderer);
 }
 
-void Snake::move(Direction dir)
+void Snake::updatePos(Direction dir)
 {
 	switch (dir)
 	{
@@ -384,8 +360,6 @@ void Snake::move(Direction dir)
 	default:
 		break;
 	}
-
-
 }
 
 void Snake::keyPress(SDL_Keycode e)
@@ -411,12 +385,12 @@ void Snake::keyPress(SDL_Keycode e)
 	case SDLK_p:
 		if (!isTimerStarted(timer) && isTimerPaused(timer))
 		{
-			unPauseTimer(timer); 
+			unPauseTimer(timer);
 			Mix_ResumeMusic();
 		}
 		else
 		{
-			pauseTimer(timer); 
+			pauseTimer(timer);
 			Mix_PauseMusic();
 		}
 		break;
@@ -432,19 +406,6 @@ void Snake::keyPress(SDL_Keycode e)
 	}
 }
 
-bool Snake::loadMedia(Texture& texture, const std::string& path) const
-{
-	bool success = true;
-
-	loadFromFile(texture, mRenderer, path);
-	if (texture.mTexture == nullptr)
-	{
-		printf("Unable to load image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
-		success = false;
-	}
-
-	return success;
-}
 
 bool Snake::loadMedia_new()
 {
@@ -468,17 +429,14 @@ SDL_Rect Snake::addApple()
 
 	SDL_Rect temp;
 
-	std::random_device rd; //Will be used to obtain a seed for the random number engine
-	std::mt19937 generator(rd());
-
 	do
 	{
 		freePos = true;
 
-		int xPos = distributionX(generator);
-		int yPos = distributionY(generator);
+		int posX = randomNumber(0, 11);
+		int posY = randomNumber(0, 10);
 
-		temp = {xPos * SPRITE_SIZE , yPos * SPRITE_SIZE , SPRITE_SIZE, SPRITE_SIZE};
+		temp = {posX * SPRITE_SIZE , posY * SPRITE_SIZE , SPRITE_SIZE, SPRITE_SIZE};
 
 		for (auto p : recSnake)
 		{
@@ -487,7 +445,6 @@ SDL_Rect Snake::addApple()
 		}
 	}
 	while (!freePos);
-
 
 	return temp;
 }

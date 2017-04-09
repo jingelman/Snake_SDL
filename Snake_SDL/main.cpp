@@ -4,26 +4,22 @@
 
 int main(int argc, char* args[])
 {
-	
 	Snake snake;
 
-	if(!snake.init())
+	if (!snake.init())
 	{
 		printf("Failed to initialize!\n");
 		return 0;
 	}
-	else
+
+	if (!snake.loadMedia_new())
 	{
-		if (!snake.loadMedia_new())
-		{
-			printf("Failed to load media!\n");
-		}
-		else
-		{
-			snake.gameLoop();
-		}
+		printf("Failed to load media!\n");
+		return 0;
 	}
 
+	// Run game
+	snake.gameLoop();
 
 	return 0;
 }

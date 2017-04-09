@@ -1,10 +1,9 @@
 ﻿#pragma once
 
 #include <SDL.h>
+#include <vector>
 
 #include "Texture.h"
-
-#include <vector>
 #include "Timer.h"
 #include "Music.h"
 #include "soundEffect.h"
@@ -12,7 +11,10 @@
 
 enum class Direction
 {
-	UP, RIGHT, LEFT, DOWN
+	UP,
+	RIGHT,
+	LEFT,
+	DOWN
 };
 
 class Snake
@@ -27,12 +29,12 @@ public:
 	bool loadMedia_new();
 
 	void gameLoop();
-	void move(Direction dir);
+	void updatePos(Direction dir);
 
 private:
 
 	//The window we'll be rendering to
-	SDL_Window *mWindow = nullptr;
+	SDL_Window* mWindow = nullptr;
 
 	//The window renderer
 	SDL_Renderer* mRenderer = nullptr;
@@ -52,7 +54,7 @@ private:
 	std::vector<SDL_Rect> recSnakeBody;
 
 	SDL_Event event;
-	
+
 	Music music;
 	SoundEffect appleEffect;
 	SoundEffect loseEffect;
@@ -74,39 +76,17 @@ private:
 	const int SCREEN_WIDTH = 1280;
 	const int SCREEN_HEIGHT = 800;
 	const int SPRITE_SIZE = 64;
-	const int GAMEAREA_WIDTH = 12*SPRITE_SIZE;
-	const int GAMEAREA_HEIGHT = 11*SPRITE_SIZE;
+	const int GAMEAREA_WIDTH = 12 * SPRITE_SIZE;
+	const int GAMEAREA_HEIGHT = 11 * SPRITE_SIZE;
 
 	bool quit = false;
-	
+
 	// Methods
 	void keyPress(SDL_Keycode e);
 
-	bool loadMedia(Texture &texture, const std::string &path) const;
-	
-
 	SDL_Rect addApple();
-	bool hitWall(const SDL_Rect &head);
-	bool Snake::hitBody(const std::vector<SDL_Rect> &snake);
+	bool hitWall(const SDL_Rect& head);
+	bool Snake::hitBody(const std::vector<SDL_Rect>& snake);
 
 	bool hitApple(const int x, const int y) const;
-
 };
-
-inline IMG_InitFlags getImageType(const char* path)
-{
-	int index = -1;
-	for(int i = strlen(path) - 1; i >= 0  ; --i)
-	{
-		if (path[i] == '.')
-		{
-			index = i;
-			break;
-		}
-	}
-
-	if (path + index == "png")
-		return IMG_INIT_PNG;
-	if (path + index == "jpg")
-		return IMG_INIT_JPG;
-}

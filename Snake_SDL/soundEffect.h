@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include <cstdio>
 #include <SDL_mixer.h>
 
+#include <cstdio>
 
 struct SoundEffect
 {
@@ -24,7 +24,7 @@ inline bool initSound()
 }
 
 
-inline bool loadEffect(SoundEffect &e, const char* path)
+inline bool loadEffect(SoundEffect& e, const char* path)
 {
 	bool success = true;
 
@@ -43,7 +43,7 @@ inline void playEffect(SoundEffect e)
 	Mix_PlayChannel(-1, e.effect, 0);
 }
 
-inline void freeSoundEffect(SoundEffect &s)
+inline void freeSoundEffect(SoundEffect& s)
 {
 	Mix_FreeChunk(s.effect);
 }
