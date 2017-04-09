@@ -5,6 +5,7 @@
 #include "Texture.h"
 
 #include <vector>
+#include "Timer.h"
 
 
 enum class Direction
@@ -19,8 +20,11 @@ public:
 	~Snake();
 
 	bool init();
+	void setupGame();
+	void render();
 
 	void gameLoop();
+	void move(Direction dir);
 
 private:
 
@@ -49,6 +53,8 @@ private:
 	uint8_t apples = 0;
 
 	Direction direction;
+	Timer timer;
+	Uint32 countedFrames = 0;
 
 	const char* pathToBackground = "resource/backgrund.jpg";
 	const char* pathToSprite = "resource/sprites.png";
@@ -68,6 +74,8 @@ private:
 	bool loadMedia(Texture &texture, const std::string &path) const;
 
 	SDL_Rect addApple();
+	void hitWall(const SDL_Rect &head);
+	void Snake::hitBody(const std::vector<SDL_Rect> &snake);
 
 	bool hitApple(const int x, const int y) const;
 

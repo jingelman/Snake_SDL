@@ -6,9 +6,9 @@
 
 struct Texture
 {
-	SDL_Texture* mTexture = nullptr;
-	int16_t mWidth;
-	int16_t mHeight;
+	SDL_Texture* mTexture = nullptr;	// 4 bits
+	int16_t mWidth = 0;					// 16 bits
+	int16_t mHeight = 0;				// 16 bits
 };
 
 inline bool loadFromFile(Texture &texture, SDL_Renderer* renderer, std::string path)
