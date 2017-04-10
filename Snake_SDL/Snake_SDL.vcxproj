@@ -127,12 +127,11 @@
     <ClCompile Include="Snake.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Music.h" />
+    <ClInclude Include="SoundManager.h" />
     <ClInclude Include="RandomGenerator.h" />
-    <ClInclude Include="soundEffect.h" />
-    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Snake.h" />
-    <ClInclude Include="Timer.h" />
+    <ClInclude Include="TimerManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

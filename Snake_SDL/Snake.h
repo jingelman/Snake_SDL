@@ -3,19 +3,7 @@
 #include <SDL.h>
 #include <vector>
 
-#include "Texture.h"
-#include "Timer.h"
-#include "Music.h"
-#include "soundEffect.h"
-
-
-enum class Direction
-{
-	UP,
-	RIGHT,
-	LEFT,
-	DOWN
-};
+#include "TimerManager.h"
 
 class Snake
 {
@@ -26,10 +14,10 @@ public:
 	bool init();
 	void setupGame();
 	void render();
-	bool loadMedia_new();
+	bool loadMedia();
 
 	void gameLoop();
-	void updatePos(Direction dir);
+	void updatePos();
 
 private:
 
@@ -38,11 +26,6 @@ private:
 
 	//The window renderer
 	SDL_Renderer* mRenderer = nullptr;
-
-	//Current displayed texture
-	Texture texBackground;
-	Texture texSprites;
-	Texture texGrass;
 
 	SDL_Rect recBackground;
 	SDL_Rect recGameArea;
@@ -53,17 +36,15 @@ private:
 	std::vector<SDL_Rect> recSnakeTails;
 	std::vector<SDL_Rect> recSnakeBody;
 
-	SDL_Event event;
+	enum class Direction
+	{
+		UP,
+		RIGHT,
+		LEFT,
+		DOWN
+	} direction;
 
-	Music music;
-	SoundEffect appleEffect;
-	SoundEffect loseEffect;
-
-	uint8_t apples = 0;
-
-	Direction direction;
-	Timer timer;
-	Uint32 countedFrames = 0;
+	TimerManager timer;
 
 	const char* pathToBackground = "resource/texture/backgrund.jpg";
 	const char* pathToSprite = "resource/texture/sprites.png";
@@ -79,13 +60,11 @@ private:
 	const int GAMEAREA_WIDTH = 12 * SPRITE_SIZE;
 	const int GAMEAREA_HEIGHT = 11 * SPRITE_SIZE;
 
-	bool quit = false;
-
 	// Methods
 	void keyPress(SDL_Keycode e);
 
 	SDL_Rect addApple();
-	bool hitWall(const SDL_Rect& head);
+	bool hitWall(const SDL_Rect& head) const;
 	bool Snake::hitBody(const std::vector<SDL_Rect>& snake);
 
 	bool hitApple(const int x, const int y) const;

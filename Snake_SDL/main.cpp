@@ -12,7 +12,7 @@ int main(int argc, char* args[])
 		return 0;
 	}
 
-	if (!snake.loadMedia_new())
+	if (!snake.loadMedia())
 	{
 		printf("Failed to load media!\n");
 		return 0;
