@@ -4,6 +4,7 @@
 
 #include "SoundManager.h"
 #include "TextureManager.h"
+#include "TimerManager.h"
 
 #include "RandomGenerator.h"
 
@@ -12,6 +13,7 @@
 #define SLOW_FRAMERATE 7
 #define MEDIUM_FRAMERATE 10
 #define FAST_FRAMERATE 13
+
 
 enum RENDERQUALITY
 {
@@ -71,8 +73,8 @@ bool Snake::init()
 {
 	bool success = true;
 
-	timer.startTimer();
-	timer.setFrameCap(true);
+	TimerManager::startTimer();
+	TimerManager::setFrameCap(true);
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
@@ -150,22 +152,22 @@ void Snake::gameLoop()
 		}
 
 		//If we want to cap the frame rate
-		if (timer.isFrameCap() && timer.getTicks() < (Uint32)1000 / MEDIUM_FRAMERATE)
+		if (TimerManager::isFrameCap() && TimerManager::getTicks() < (Uint32)1000 / MEDIUM_FRAMERATE)
 		{
 			//Sleep the remaining frame time
-			SDL_Delay(1000 / MEDIUM_FRAMERATE - timer.getTicks());
+			SDL_Delay(1000 / MEDIUM_FRAMERATE - TimerManager::getTicks());
 		}
 
-		if (timer.isTimerStarted())
+		if (TimerManager::isTimerStarted())
 		{
-			timer.startTimer();
+			TimerManager::startTimer();
 
 			if (!SoundManager::isMusicPlaying() || !SoundManager::isMusicPaused())
 			{
 				SoundManager::playMusic(0);
 			}
 
-			if (!timer.isTimerPaused())
+			if (!TimerManager::isTimerPaused())
 			{
 				if (!hitWall(recSnake[0]) && !hitBody(recSnake))
 				{
@@ -174,7 +176,7 @@ void Snake::gameLoop()
 				}
 				else
 				{
-					timer.stopTimer();
+					TimerManager::stopTimer();
 					SoundManager::pauseMusic();
 				}
 			}
@@ -375,19 +377,19 @@ void Snake::keyPress(SDL_Keycode e)
 			direction = Direction::DOWN;
 		break;
 	case SDLK_p:
-		if (!timer.isTimerStarted() && timer.isTimerPaused())
+		if (!TimerManager::isTimerStarted() && TimerManager::isTimerPaused())
 		{
-			timer.unPauseTimer();
+			TimerManager::unPauseTimer();
 			SoundManager::resumeMusic();
 		}
 		else
 		{
-			timer.pauseTimer();
+			TimerManager::pauseTimer();
 			SoundManager::pauseMusic();
 		}
 		break;
 	case SDLK_SPACE:
-		timer.startTimer();
+		TimerManager::startTimer();
 		setupGame();
 		break;
 	default:

@@ -3,8 +3,6 @@
 #include <SDL.h>
 #include <vector>
 
-#include "TimerManager.h"
-
 class Snake
 {
 public:
@@ -43,8 +41,6 @@ private:
 		LEFT,
 		DOWN
 	} direction;
-
-	TimerManager timer;
 
 	const char* pathToBackground = "resource/texture/backgrund.jpg";
 	const char* pathToSprite = "resource/texture/sprites.png";

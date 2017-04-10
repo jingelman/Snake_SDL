@@ -2,7 +2,7 @@
 
 #include <SDL.h>
 
-struct TimerManager
+namespace TimerManager
 {
 	struct Timer
 	{
@@ -12,9 +12,9 @@ struct TimerManager
 		bool isPaused;
 		bool isStarted;
 		bool isFrameCap = false;
-	} timer;
+	} static timer;;
 
-	void startTimer()
+	static void startTimer()
 	{
 		timer.isStarted = true;
 		timer.isPaused = false;
@@ -23,22 +23,22 @@ struct TimerManager
 		timer.pausedTicks = 0;
 	}
 
-	bool isTimerStarted() const
+	static bool isTimerStarted()
 	{
 		return timer.isStarted;
 	}
 
-	bool isTimerPaused() const
+	static bool isTimerPaused()
 	{
 		return timer.isPaused;
 	}
 
-	bool isTimerStoped() const
+	static bool isTimerStoped()
 	{
 		return timer.isPaused;
 	}
 
-	void stopTimer()
+	static void stopTimer()
 	{
 		timer.isStarted = false;
 		timer.isPaused = false;
@@ -47,7 +47,7 @@ struct TimerManager
 		timer.pausedTicks = 0;
 	}
 
-	void pauseTimer()
+	static void pauseTimer()
 	{
 		timer.isStarted = false;
 		timer.isPaused = true;
@@ -56,7 +56,7 @@ struct TimerManager
 		timer.startTicks = 0;
 	}
 
-	void unPauseTimer()
+	static void unPauseTimer()
 	{
 		timer.isStarted = true;
 		timer.isPaused = false;
@@ -65,7 +65,7 @@ struct TimerManager
 		timer.pausedTicks = 0;
 	}
 
-	Uint32 getTicks() const
+	static Uint32 getTicks()
 	{
 		Uint32 time = 0;
 
@@ -78,12 +78,12 @@ struct TimerManager
 		return time;
 	}
 
-	void setFrameCap(bool cap)
+	static void setFrameCap(bool cap)
 	{
 		timer.isFrameCap = cap;
 	}
 
-	bool isFrameCap() const
+	static bool isFrameCap()
 	{
 		return timer.isFrameCap;
 	}
