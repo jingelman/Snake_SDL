@@ -43,9 +43,10 @@ private: // Variables
 	const char* pathTograss = "resource/texture/grass.jpg";
 
 	const char* pathToMusic = "resource/sound/369920__mrthenoronha__cartoon-game-theme-loop.wav";
-	const char* pathToLoseEffect = "resource/sound/362375__shapingwaves__sw001-8-bit-games-music-element-fail-01-arp.wav";
+	const char* pathToLoseEffect = "resource/sound/333785__projectsu012__8-bit-failure-sound.wav";
 	const char* pathToEatEffect = "resource/sound/20265__koops__apple-crunch-02.wav";
 
+	const Uint16 TILE_SIZE = 32;
 	const Uint16 SPRITE_SIZE = 64;
 
 	const Uint16 SCREEN_WIDTH = 1280;

@@ -19,6 +19,7 @@ namespace TextureManager
 			SDL_DestroyTexture(tex.mTexture);
 			tex.mTexture = nullptr;
 		}
+		IMG_Quit();
 	}
 
 	static bool initTexture()

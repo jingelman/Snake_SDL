@@ -7,7 +7,11 @@
 
 #include "RandomGenerator.h"
 
+//#define _DEBUG = 1
+
+#ifdef _DEBUG
 #include <stdio.h>
+#endif
 
 enum class Direction
 {
@@ -19,9 +23,9 @@ enum class Direction
 
 enum GAMESPEED
 {
-	SLOW_FRAMERATE = 7,
-	MEDIUM_FRAMERATE = 10,
-	FAST_FRAMERATE = 13
+	SLOW_FRAMERATE = 10,
+	MEDIUM_FRAMERATE = 20,
+	FAST_FRAMERATE = 30
 } speed;
 
 enum RENDERQUALITY
@@ -115,9 +119,8 @@ bool Snake::loadMedia()
 	if (!SoundManager::loadEffect(pathToEatEffect))
 		success = false;
 
-	/*if (!loadEffect(loseEffect, pathToLoseEffect))
-	success = false;
-	*/
+	if (!SoundManager::loadEffect(pathToLoseEffect))
+		success = false;
 
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToBackground))
 		success = false;
@@ -136,46 +139,47 @@ void Snake::setupGame()
 {
 	recSnake.clear();
 
-	recSnake.push_back({ 3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
-	recSnake.push_back({ 2 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
-	recSnake.push_back({ 1 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnake.push_back({ 3 * TILE_SIZE, 3 * TILE_SIZE, TILE_SIZE, TILE_SIZE });
+	recSnake.push_back({ 2 * TILE_SIZE, 3 * TILE_SIZE, TILE_SIZE, TILE_SIZE });
+	recSnake.push_back({ 1 * TILE_SIZE, 3 * TILE_SIZE, TILE_SIZE, TILE_SIZE });
 
 	direction = Direction::RIGHT;
 
 	applePos = addApple();
 
-	speed = GAMESPEED::MEDIUM_FRAMERATE;
+	speed = GAMESPEED::SLOW_FRAMERATE;
 }
 
 void Snake::gameLoop()
 {
 	bool quit = false;
-	Uint32 countedFrames = 0;
 	SDL_Event event;
 
 	while (!quit)
 	{
-		while (SDL_PollEvent(&event) != 0)
-		{
-			if (event.type == SDL_KEYDOWN)
-			{
-				switch (event.key.keysym.sym)
+		while (SDL_PollEvent(&event) != 0) {
+			//SDL_PollEvent(&event);
+
+			if (event.type == SDL_KEYDOWN) {
+
+				auto key = event.key.keysym.sym;
+				switch (key)
 				{
 				case SDLK_UP:
 					if (direction != Direction::DOWN)
-						direction = Direction::UP;
+						direction = Direction::UP;// input = true;
 					break;
 				case SDLK_RIGHT:
 					if (direction != Direction::LEFT)
-						direction = Direction::RIGHT;
+						direction = Direction::RIGHT;// input = true;
 					break;
 				case SDLK_LEFT:
 					if (direction != Direction::RIGHT)
-						direction = Direction::LEFT;
+						direction = Direction::LEFT;// input = true;
 					break;
 				case SDLK_DOWN:
 					if (direction != Direction::UP)
-						direction = Direction::DOWN;
+						direction = Direction::DOWN;// input = true;
 					break;
 				case SDLK_p:
 					if (!TimerManager::isTimerStarted() && TimerManager::isTimerPaused())
@@ -243,10 +247,10 @@ void Snake::gameLoop()
 				{
 					TimerManager::stopTimer();
 					SoundManager::pauseMusic();
+					SoundManager::playEffect(1);
 				}
 			}
 		}
-		++countedFrames;
 	}
 }
 
@@ -255,15 +259,16 @@ void Snake::updatePos()
 	switch (direction)
 	{
 	case Direction::UP:
+#if _DEBUG
 		printf("Going up!\n");
-
+#endif
 		auto temp = recSnake[recSnake.size() - 1];
 
 		for (auto i = recSnake.size() - 1; i > 0; --i)
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
-		recSnake[0].y -= SPRITE_SIZE;
+		recSnake[0].y -= TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
 		{
@@ -274,7 +279,9 @@ void Snake::updatePos()
 
 		break;
 	case Direction::RIGHT:
+#if _DEBUG
 		printf("Going right!\n");
+#endif
 
 		temp = recSnake[recSnake.size() - 1];
 
@@ -282,7 +289,7 @@ void Snake::updatePos()
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
-		recSnake[0].x += SPRITE_SIZE;
+		recSnake[0].x += TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
 		{
@@ -293,7 +300,9 @@ void Snake::updatePos()
 
 		break;
 	case Direction::LEFT:
+#if _DEBUG
 		printf("Going left!\n");
+#endif
 
 		temp = recSnake[recSnake.size() - 1];
 
@@ -301,7 +310,7 @@ void Snake::updatePos()
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
-		recSnake[0].x -= SPRITE_SIZE;
+		recSnake[0].x -= TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
 		{
@@ -312,7 +321,9 @@ void Snake::updatePos()
 
 		break;
 	case Direction::DOWN:
+#if _DEBUG
 		printf("Going down!\n");
+#endif
 
 		temp = recSnake[recSnake.size() - 1];
 
@@ -320,7 +331,7 @@ void Snake::updatePos()
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
-		recSnake[0].y += SPRITE_SIZE;
+		recSnake[0].y += TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
 		{
@@ -430,7 +441,7 @@ SDL_Rect Snake::addApple()
 		Uint8 posX = randomNumber(0, 11);
 		Uint8 posY = randomNumber(0, 10);
 
-		temp = { posX * SPRITE_SIZE , posY * SPRITE_SIZE , SPRITE_SIZE, SPRITE_SIZE };
+		temp = { posX * TILE_SIZE , posY * TILE_SIZE , TILE_SIZE, TILE_SIZE };
 
 		for (auto p : recSnake)
 		{
@@ -453,7 +464,9 @@ bool Snake::hitWall(const SDL_Rect& head) const
 
 	if (head.x < 0 || head.y < 0 || head.x + head.w > GAMEAREA_WIDTH || head.y + head.h > GAMEAREA_HEIGHT)
 	{
+#if _DEBUG
 		printf("You hit the wall! \n");
+#endif
 		hit = true;
 	}
 
@@ -470,7 +483,9 @@ bool Snake::hitBody(const std::vector<SDL_Rect>& snake)
 		auto& snakePart = recSnake[p];
 		if (snakePart.x == head.x && snakePart.y == head.y)
 		{
+#if _DEBUG
 			printf("You hit your own body! \n");
+#endif
 			hit = true;
 		}
 	}
