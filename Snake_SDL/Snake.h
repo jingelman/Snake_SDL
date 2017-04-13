@@ -25,6 +25,8 @@ private: // Methods
 	bool hitApple(const SDL_Rect& head) const;
 	bool Snake::hitBody(const std::vector<SDL_Rect>& snake);
 
+private: // Variables
+
 	SDL_Rect backgroundArea;
 	SDL_Rect gameArea;
 	SDL_Rect applePos;
@@ -35,9 +37,6 @@ private: // Methods
 	std::vector<SDL_Rect> HeadSprites;
 	std::vector<SDL_Rect> TailSprites;
 	std::vector<SDL_Rect> BodySprites;
-
-	
-private: // Variables
 
 	const char* pathToBackground = "resource/texture/backgrund.jpg";
 	const char* pathToSprite = "resource/texture/sprites.png";
