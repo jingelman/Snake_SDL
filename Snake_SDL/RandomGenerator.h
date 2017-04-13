@@ -2,7 +2,7 @@
 
 #include <random>
 
-inline uint8_t randomNumber(const uint8_t min, const uint8_t max)
+inline Uint8 randomNumber(const Uint8 min, const Uint8 max)
 {
 	std::uniform_int_distribution<int> distValue(min, max);
 	std::random_device rd;

@@ -10,37 +10,34 @@ public:
 	~Snake();
 
 	bool init();
-	void setupGame();
-	void render();
 	bool loadMedia();
-
 	void gameLoop();
+	
+private: // Methods
+
+	void setupGame();
 	void updatePos();
+	void updateSprites();
+	void render();
 
-private:
+	SDL_Rect addApple();
+	bool hitWall(const SDL_Rect& head) const;
+	bool hitApple(const SDL_Rect& head) const;
+	bool Snake::hitBody(const std::vector<SDL_Rect>& snake);
 
-	//The window we'll be rendering to
-	SDL_Window* mWindow = nullptr;
+	SDL_Rect backgroundArea;
+	SDL_Rect gameArea;
+	SDL_Rect applePos;
+	SDL_Rect appleSprite;
 
-	//The window renderer
-	SDL_Renderer* mRenderer = nullptr;
-
-	SDL_Rect recBackground;
-	SDL_Rect recGameArea;
 	std::vector<SDL_Rect> recSnake;
-	SDL_Rect recApple, recApple_pos;
+	std::vector<SDL_Rect> tempPos;
+	std::vector<SDL_Rect> HeadSprites;
+	std::vector<SDL_Rect> TailSprites;
+	std::vector<SDL_Rect> BodySprites;
 
-	std::vector<SDL_Rect> recSnakeHeads;
-	std::vector<SDL_Rect> recSnakeTails;
-	std::vector<SDL_Rect> recSnakeBody;
-
-	enum class Direction
-	{
-		UP,
-		RIGHT,
-		LEFT,
-		DOWN
-	} direction;
+	
+private: // Variables
 
 	const char* pathToBackground = "resource/texture/backgrund.jpg";
 	const char* pathToSprite = "resource/texture/sprites.png";
@@ -50,18 +47,15 @@ private:
 	const char* pathToLoseEffect = "resource/sound/362375__shapingwaves__sw001-8-bit-games-music-element-fail-01-arp.wav";
 	const char* pathToEatEffect = "resource/sound/20265__koops__apple-crunch-02.wav";
 
-	const int SCREEN_WIDTH = 1280;
-	const int SCREEN_HEIGHT = 800;
-	const int SPRITE_SIZE = 64;
-	const int GAMEAREA_WIDTH = 12 * SPRITE_SIZE;
-	const int GAMEAREA_HEIGHT = 11 * SPRITE_SIZE;
+	const Uint16 SPRITE_SIZE = 64;
 
-	// Methods
-	void keyPress(SDL_Keycode e);
+	const Uint16 SCREEN_WIDTH = 1280;
+	const Uint16 SCREEN_HEIGHT = 800;
 
-	SDL_Rect addApple();
-	bool hitWall(const SDL_Rect& head) const;
-	bool Snake::hitBody(const std::vector<SDL_Rect>& snake);
+	const Uint16 tilesWidth = 12;
+	const Uint16 tilesHeight = 12;
 
-	bool hitApple(const int x, const int y) const;
+	const Uint16 GAMEAREA_WIDTH = tilesWidth * SPRITE_SIZE;
+	const Uint16 GAMEAREA_HEIGHT = tilesHeight * SPRITE_SIZE;
+
 };

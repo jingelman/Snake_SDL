@@ -14,7 +14,7 @@ namespace TextureManager
 
 	static void freeTexture()
 	{
-		for(auto &tex : textures)
+		for (auto &tex : textures)
 		{
 			SDL_DestroyTexture(tex.mTexture);
 			tex.mTexture = nullptr;
@@ -25,7 +25,7 @@ namespace TextureManager
 	{
 		bool success = true;
 
-		int imgFlags = IMG_INIT_PNG;
+		Uint8 imgFlags = IMG_INIT_PNG;
 		if (!(IMG_Init(imgFlags) & imgFlags))
 		{
 			printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
@@ -83,27 +83,9 @@ namespace TextureManager
 		return success;
 	}
 
-	static bool setRenderQuality(short q)
+
+	static Texture& getTexture(Uint8 ind)
 	{
-		bool success = true;
-
-		if (q > 2)
-		{
-			printf("The number must be between 0 and 2");
-			success = false;
-			return success;
-		}
-
-		const char aChar = '0' + q;
-
-		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, &aChar))
-		{
-			printf("Warning: Linear texture filtering not enabled!");
-			success = false;
-			return success;
-		}
-
-		return success;
+		return textures[ind];
 	}
-
 };

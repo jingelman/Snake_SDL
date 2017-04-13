@@ -1,7 +1,6 @@
 ﻿#include "Snake.h"
 
-#include <SDL_image.h>
-
+#include "CoreManager.h"
 #include "SoundManager.h"
 #include "TextureManager.h"
 #include "TimerManager.h"
@@ -10,10 +9,20 @@
 
 #include <stdio.h>
 
-#define SLOW_FRAMERATE 7
-#define MEDIUM_FRAMERATE 10
-#define FAST_FRAMERATE 13
+enum class Direction
+{
+	UP,
+	RIGHT,
+	LEFT,
+	DOWN
+} direction;
 
+enum GAMESPEED
+{
+	SLOW_FRAMERATE = 7,
+	MEDIUM_FRAMERATE = 10,
+	FAST_FRAMERATE = 13
+} speed;
 
 enum RENDERQUALITY
 {
@@ -24,50 +33,40 @@ enum RENDERQUALITY
 
 Snake::Snake()
 {
-	recBackground = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+	backgroundArea = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 
-	int heightBorder = (SCREEN_HEIGHT - GAMEAREA_HEIGHT) / 2;
-	int widthBorder = SCREEN_HEIGHT * 0.1;
+	Uint16 heightBorder = 0.5*(SCREEN_HEIGHT - GAMEAREA_HEIGHT);
+	Uint16 widthBorder = 0.1*SCREEN_HEIGHT;
 
-	recGameArea = {widthBorder, heightBorder, GAMEAREA_WIDTH, GAMEAREA_HEIGHT};
+	gameArea = { widthBorder, heightBorder, GAMEAREA_WIDTH, GAMEAREA_HEIGHT };
 
-	recSnakeHeads.push_back({3 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeHeads.push_back({4 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeHeads.push_back({3 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeHeads.push_back({4 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
+	HeadSprites.push_back({ 3 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	HeadSprites.push_back({ 4 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	HeadSprites.push_back({ 3 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	HeadSprites.push_back({ 4 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 
-	recSnakeTails.push_back({3 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeTails.push_back({4 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeTails.push_back({3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeTails.push_back({4 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
+	TailSprites.push_back({ 3 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	TailSprites.push_back({ 4 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	TailSprites.push_back({ 3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	TailSprites.push_back({ 4 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 
-	recSnakeBody.push_back({0 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeBody.push_back({1 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeBody.push_back({2 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeBody.push_back({0 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeBody.push_back({2 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnakeBody.push_back({2 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
+	BodySprites.push_back({ 0 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	BodySprites.push_back({ 1 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	BodySprites.push_back({ 2 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	BodySprites.push_back({ 0 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	BodySprites.push_back({ 2 * SPRITE_SIZE, 1 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	BodySprites.push_back({ 2 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 
-	recApple = {0 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE};
+	appleSprite = { 0 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE };
 }
 
 Snake::~Snake()
 {
 	SoundManager::freeMusic();
 	SoundManager::freeSoundEffect();
-
 	TextureManager::freeTexture();
-
-	SDL_DestroyRenderer(mRenderer);
-	mRenderer = nullptr;
-
-	SDL_DestroyWindow(mWindow);
-	mWindow = nullptr;
-
-	IMG_Quit();
-	SDL_Quit();
+	CoreManager::freeCore();
 }
-
 
 bool Snake::init()
 {
@@ -76,33 +75,21 @@ bool Snake::init()
 	TimerManager::startTimer();
 	TimerManager::setFrameCap(true);
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-	{
-		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+	if (!CoreManager::initVideo || !CoreManager::initAudio)
 		success = false;
-	}
 	else
 	{
-		TextureManager::setRenderQuality(LINEAR);
+		CoreManager::setRenderQuality(LINEAR);
 
-		mWindow = SDL_CreateWindow("Snake WoW!", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (mWindow == nullptr)
-		{
-			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+		if (!CoreManager::CreateWindow("Snake WoW!", SCREEN_WIDTH, SCREEN_HEIGHT))
 			success = false;
-		}
 		else
 		{
-			//Create renderer for window
-			mRenderer = SDL_CreateRenderer(mWindow, -1, SDL_RENDERER_ACCELERATED);
-			if (mRenderer == nullptr)
-			{
-				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+			if (!CoreManager::CreateRenderer())
 				success = false;
-			}
 			else
 			{
-				SDL_SetRenderDrawColor(mRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				CoreManager::SetRenderColor(255, 255, 255, 255);
 
 				if (!TextureManager::initTexture())
 					success = false;
@@ -118,19 +105,47 @@ bool Snake::init()
 	return success;
 }
 
+bool Snake::loadMedia()
+{
+	bool success = true;
+
+	if (!SoundManager::loadMusic(pathToMusic))
+		success = false;
+
+	if (!SoundManager::loadEffect(pathToEatEffect))
+		success = false;
+
+	/*if (!loadEffect(loseEffect, pathToLoseEffect))
+	success = false;
+	*/
+
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToBackground))
+		success = false;
+
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathTograss))
+		success = false;
+
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToSprite))
+		success = false;
+
+
+	return success;
+}
+
 void Snake::setupGame()
 {
 	recSnake.clear();
 
-	recSnake.push_back({3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnake.push_back({2 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
-	recSnake.push_back({1 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE});
+	recSnake.push_back({ 3 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnake.push_back({ 2 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
+	recSnake.push_back({ 1 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 
 	direction = Direction::RIGHT;
 
-	recApple_pos = addApple();
-}
+	applePos = addApple();
 
+	speed = GAMESPEED::MEDIUM_FRAMERATE;
+}
 
 void Snake::gameLoop()
 {
@@ -144,18 +159,67 @@ void Snake::gameLoop()
 		{
 			if (event.type == SDL_KEYDOWN)
 			{
-				if (event.key.keysym.sym == SDLK_ESCAPE)
-					quit = true;
-
-				keyPress(event.key.keysym.sym);
+				switch (event.key.keysym.sym)
+				{
+				case SDLK_UP:
+					if (direction != Direction::DOWN)
+						direction = Direction::UP;
+					break;
+				case SDLK_RIGHT:
+					if (direction != Direction::LEFT)
+						direction = Direction::RIGHT;
+					break;
+				case SDLK_LEFT:
+					if (direction != Direction::RIGHT)
+						direction = Direction::LEFT;
+					break;
+				case SDLK_DOWN:
+					if (direction != Direction::UP)
+						direction = Direction::DOWN;
+					break;
+				case SDLK_p:
+					if (!TimerManager::isTimerStarted() && TimerManager::isTimerPaused())
+					{
+						TimerManager::unPauseTimer();
+						SoundManager::resumeMusic();
+					}
+					else
+					{
+						TimerManager::pauseTimer();
+						SoundManager::pauseMusic();
+					}
+					break;
+				case SDLK_j:
+				{
+					speed = GAMESPEED::SLOW_FRAMERATE;
+					break;
+				}
+				case SDLK_k:
+				{
+					speed = GAMESPEED::MEDIUM_FRAMERATE;
+					break;
+				}
+				case SDLK_l:
+				{
+					speed = GAMESPEED::FAST_FRAMERATE;
+					break;
+				}
+				case SDLK_SPACE:
+					TimerManager::startTimer();
+					setupGame();
+					break;
+				case SDLK_ESCAPE: quit = true;
+				default:
+					break;
+				}
 			}
 		}
 
 		//If we want to cap the frame rate
-		if (TimerManager::isFrameCap() && TimerManager::getTicks() < (Uint32)1000 / MEDIUM_FRAMERATE)
+		if (TimerManager::isFrameCap() && TimerManager::getTicks() < (Uint32)1000 / speed)
 		{
 			//Sleep the remaining frame time
-			SDL_Delay(1000 / MEDIUM_FRAMERATE - TimerManager::getTicks());
+			SDL_Delay(1000 / speed - TimerManager::getTicks());
 		}
 
 		if (TimerManager::isTimerStarted())
@@ -172,6 +236,7 @@ void Snake::gameLoop()
 				if (!hitWall(recSnake[0]) && !hitBody(recSnake))
 				{
 					updatePos();
+					updateSprites();
 					render();
 				}
 				else
@@ -181,94 +246,8 @@ void Snake::gameLoop()
 				}
 			}
 		}
-
 		++countedFrames;
 	}
-}
-
-void Snake::render()
-{
-	//Clear screen
-	SDL_SetRenderDrawColor(mRenderer, 255, 255, 255, 255);
-	SDL_RenderClear(mRenderer);
-	SDL_RenderSetViewport(mRenderer, &recBackground);
-
-	SDL_RenderCopy(mRenderer, TextureManager::textures[0].mTexture, nullptr, nullptr);
-	SDL_RenderSetViewport(mRenderer, &recGameArea);
-
-	SDL_RenderCopy(mRenderer, TextureManager::textures[1].mTexture, nullptr, nullptr);
-
-	// Render snake
-	for (int i = 0; i < recSnake.size(); ++i)
-	{
-		if (i == 0)
-		{
-			if (direction == Direction::UP)
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeHeads[0], &recSnake[i]);
-			else if (direction == Direction::RIGHT)
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeHeads[1], &recSnake[i]);
-			else if (direction == Direction::LEFT)
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeHeads[2], &recSnake[i]);
-			else
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeHeads[3], &recSnake[i]);
-		}
-		else if (i == recSnake.size() - 1)
-		{
-			if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y) // up
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeTails[0], &recSnake[i]);
-			else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y) // right
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeTails[1], &recSnake[i]);
-			else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y) // left
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeTails[2], &recSnake[i]);
-			else
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeTails[3], &recSnake[i]); // down
-		}
-		else
-		{
-			//TODO check direction
-			if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // left-up
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[3], &recSnake[i]);
-
-			else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // left-left
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[1], &recSnake[i]);
-
-			else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y) // up-left
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[2], &recSnake[i]);
-
-			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y) // up-up
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[4], &recSnake[i]);
-
-			else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y) // up-right
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[0], &recSnake[i]);
-
-			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // left-down
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[0], &recSnake[i]);
-
-			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y) // down-down
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[4], &recSnake[i]);
-
-			else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // right-right
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[1], &recSnake[i]);
-
-			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // down-right
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[2], &recSnake[i]);
-
-			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y) // right-up
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[5], &recSnake[i]);
-
-			else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y) // down-right
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[3], &recSnake[i]);
-
-			else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y) // down-left
-				SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recSnakeBody[5], &recSnake[i]);
-		}
-	}
-
-	SDL_RenderCopy(mRenderer, TextureManager::textures[2].mTexture, &recApple, &recApple_pos);
-	SDL_RenderSetViewport(mRenderer, &recGameArea);
-
-	//Update screen
-	SDL_RenderPresent(mRenderer);
 }
 
 void Snake::updatePos()
@@ -280,16 +259,16 @@ void Snake::updatePos()
 
 		auto temp = recSnake[recSnake.size() - 1];
 
-		for (int i = recSnake.size() - 1; i > 0; --i)
+		for (auto i = recSnake.size() - 1; i > 0; --i)
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
 		recSnake[0].y -= SPRITE_SIZE;
 
-		if (hitApple(recSnake[0].x, recSnake[0].y))
+		if (hitApple(recSnake[0]))
 		{
 			SoundManager::playEffect(0);
-			recApple_pos = addApple();
+			applePos = addApple();
 			recSnake.push_back(temp);
 		}
 
@@ -299,16 +278,16 @@ void Snake::updatePos()
 
 		temp = recSnake[recSnake.size() - 1];
 
-		for (int i = recSnake.size() - 1; i > 0; --i)
+		for (auto i = recSnake.size() - 1; i > 0; --i)
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
 		recSnake[0].x += SPRITE_SIZE;
 
-		if (hitApple(recSnake[0].x, recSnake[0].y))
+		if (hitApple(recSnake[0]))
 		{
 			SoundManager::playEffect(0);
-			recApple_pos = addApple();
+			applePos = addApple();
 			recSnake.push_back(temp);
 		}
 
@@ -318,16 +297,16 @@ void Snake::updatePos()
 
 		temp = recSnake[recSnake.size() - 1];
 
-		for (int i = recSnake.size() - 1; i > 0; --i)
+		for (auto i = recSnake.size() - 1; i > 0; --i)
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
 		recSnake[0].x -= SPRITE_SIZE;
 
-		if (hitApple(recSnake[0].x, recSnake[0].y))
+		if (hitApple(recSnake[0]))
 		{
 			SoundManager::playEffect(0);
-			recApple_pos = addApple();
+			applePos = addApple();
 			recSnake.push_back(temp);
 		}
 
@@ -337,16 +316,16 @@ void Snake::updatePos()
 
 		temp = recSnake[recSnake.size() - 1];
 
-		for (int i = recSnake.size() - 1; i > 0; --i)
+		for (auto i = recSnake.size() - 1; i > 0; --i)
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
 		recSnake[0].y += SPRITE_SIZE;
 
-		if (hitApple(recSnake[0].x, recSnake[0].y))
+		if (hitApple(recSnake[0]))
 		{
 			SoundManager::playEffect(0);
-			recApple_pos = addApple();
+			applePos = addApple();
 			recSnake.push_back(temp);
 		}
 
@@ -354,75 +333,88 @@ void Snake::updatePos()
 	default:
 		break;
 	}
+
 }
 
-void Snake::keyPress(SDL_Keycode e)
+void Snake::updateSprites()
 {
-	switch (e)
+	tempPos.clear();
+	tempPos.resize(recSnake.size());
+
+	for (auto i = 0; i < recSnake.size(); ++i)
 	{
-	case SDLK_UP:
-		if (direction != Direction::DOWN)
-			direction = Direction::UP;
-		break;
-	case SDLK_RIGHT:
-		if (direction != Direction::LEFT)
-			direction = Direction::RIGHT;
-		break;
-	case SDLK_LEFT:
-		if (direction != Direction::RIGHT)
-			direction = Direction::LEFT;
-		break;
-	case SDLK_DOWN:
-		if (direction != Direction::UP)
-			direction = Direction::DOWN;
-		break;
-	case SDLK_p:
-		if (!TimerManager::isTimerStarted() && TimerManager::isTimerPaused())
+		if (i == 0)
 		{
-			TimerManager::unPauseTimer();
-			SoundManager::resumeMusic();
+			if (direction == Direction::UP)
+				tempPos[i] = HeadSprites[0];
+			else if (direction == Direction::RIGHT)
+				tempPos[i] = HeadSprites[1];
+			else if (direction == Direction::LEFT)
+				tempPos[i] = HeadSprites[2];
+			else
+				tempPos[i] = HeadSprites[3];
+		}
+		else if (i == recSnake.size() - 1)
+		{
+			if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y) // up
+				tempPos[i] = TailSprites[0];
+			else if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y) // right
+				tempPos[i] = TailSprites[1];
+			else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y) // left
+				tempPos[i] = TailSprites[2];
+			else
+				tempPos[i] = TailSprites[3]; // down
 		}
 		else
 		{
-			TimerManager::pauseTimer();
-			SoundManager::pauseMusic();
+			if (recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y ||
+				recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y)
+				tempPos[i] = BodySprites[0];
+
+			else if (recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y ||
+				recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y)
+				tempPos[i] = BodySprites[1];
+
+			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y ||
+				recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y)
+				tempPos[i] = BodySprites[2];
+
+			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x < recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y ||
+				recSnake[i].x < recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y)
+				tempPos[i] = BodySprites[3];
+
+			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y < recSnake[i + 1].y ||
+				recSnake[i].x == recSnake[i - 1].x && recSnake[i].y < recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y)
+				tempPos[i] = BodySprites[4];
+
+			else if (recSnake[i].x == recSnake[i - 1].x && recSnake[i].y > recSnake[i - 1].y && recSnake[i].x > recSnake[i + 1].x && recSnake[i].y == recSnake[i + 1].y ||
+				recSnake[i].x > recSnake[i - 1].x && recSnake[i].y == recSnake[i - 1].y && recSnake[i].x == recSnake[i + 1].x && recSnake[i].y > recSnake[i + 1].y)
+				tempPos[i] = BodySprites[5];
 		}
-		break;
-	case SDLK_SPACE:
-		TimerManager::startTimer();
-		setupGame();
-		break;
-	default:
-		break;
 	}
+
 }
 
-
-bool Snake::loadMedia()
+void Snake::render()
 {
-	bool success = true;
+	CoreManager::SetRenderColor(255, 255, 255, 255);
+	CoreManager::clearRenderer();
+	CoreManager::SetViewport(&backgroundArea);
 
-	if (!SoundManager::loadMusic(pathToMusic))
-		success = false;
+	CoreManager::RenderCopy(TextureManager::textures[0]);
+	CoreManager::SetViewport(&gameArea);
 
-	if (!SoundManager::loadEffect(pathToEatEffect))
-		success = false;
+	CoreManager::RenderCopy(TextureManager::textures[1]);
 
-	//if (!loadEffect(loseEffect, pathToLoseEffect))
-	//	success = false;
+	for (auto i = 0; i < tempPos.size(); ++i)
+	{
+		CoreManager::RenderCopy(TextureManager::textures[2], &tempPos[i], &recSnake[i]);
+	}
 
+	CoreManager::RenderCopy(TextureManager::textures[2], &appleSprite, &applePos);
+	CoreManager::SetViewport(&gameArea);
 
-	if (!TextureManager::loadTexture(mRenderer, pathToBackground))
-		success = false;
-
-	if (!TextureManager::loadTexture(mRenderer, pathTograss))
-		success = false;
-
-	if (!TextureManager::loadTexture(mRenderer, pathToSprite))
-		success = false;
-
-
-	return success;
+	CoreManager::render();
 }
 
 SDL_Rect Snake::addApple()
@@ -435,27 +427,25 @@ SDL_Rect Snake::addApple()
 	{
 		freePos = true;
 
-		int posX = randomNumber(0, 11);
-		int posY = randomNumber(0, 10);
+		Uint8 posX = randomNumber(0, 11);
+		Uint8 posY = randomNumber(0, 10);
 
-		temp = {posX * SPRITE_SIZE , posY * SPRITE_SIZE , SPRITE_SIZE, SPRITE_SIZE};
+		temp = { posX * SPRITE_SIZE , posY * SPRITE_SIZE , SPRITE_SIZE, SPRITE_SIZE };
 
 		for (auto p : recSnake)
 		{
 			if (p.x == temp.x && p.y == temp.y)
 				freePos = false;
 		}
-	}
-	while (!freePos);
+	} while (!freePos);
 
 	return temp;
 }
 
-bool Snake::hitApple(const int x, const int y) const
+bool Snake::hitApple(const SDL_Rect& head) const
 {
-	return x == recApple_pos.x && y == recApple_pos.y;
+	return head.x == applePos.x && head.y == applePos.y;
 }
-
 
 bool Snake::hitWall(const SDL_Rect& head) const
 {

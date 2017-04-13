@@ -68,7 +68,7 @@ namespace SoundManager
 		return success;
 	}
 
-	static void playMusic(short ind)
+	static void playMusic(Uint8 ind)
 	{
 		Mix_PlayMusic(music[ind].sound, -1);
 	}
@@ -101,9 +101,9 @@ namespace SoundManager
 		}
 	}
 
-	static void playEffect(short ind)
+	static void playEffect(Uint8 ind)
 	{
-		Mix_PlayChannel(-1, effects[ind].effect , 0);
+		Mix_PlayChannel(-1, effects[ind].effect, 0);
 	}
 
 	static void freeSoundEffect()
