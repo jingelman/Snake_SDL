@@ -153,9 +153,9 @@ namespace CoreManager {
 		SDL_RenderSetViewport(core.renderer, rec);
 	}
 
-	static void RenderCopy(TextureManager::Texture &t, const SDL_Rect *srec = nullptr, const SDL_Rect *drec = nullptr)
+	static void RenderCopy(TextureManager::Texture &t, const SDL_Rect *srec = nullptr, const SDL_Rect *drec = nullptr, double angle = 0, SDL_Point *center = nullptr, SDL_RendererFlip flip = SDL_FLIP_NONE)
 	{
-		SDL_RenderCopy(core.renderer, t.mTexture, srec, drec);
+		SDL_RenderCopyEx(core.renderer, t.mTexture, srec, drec, angle, center, flip);
 	}
 
 	static void render()

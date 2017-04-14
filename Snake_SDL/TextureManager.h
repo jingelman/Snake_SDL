@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 
 namespace TextureManager
 {
@@ -12,15 +13,10 @@ namespace TextureManager
 	};
 	std::vector<Texture> textures;
 
-	static void freeTexture()
-	{
-		for (auto &tex : textures)
-		{
-			SDL_DestroyTexture(tex.mTexture);
-			tex.mTexture = nullptr;
-		}
-		IMG_Quit();
-	}
+	struct Font {
+		TTF_Font *mFont = nullptr;
+		Texture texture;
+	} font;
 
 	static bool initTexture()
 	{
@@ -37,6 +33,12 @@ namespace TextureManager
 		if (!(IMG_Init(imgFlags) & imgFlags))
 		{
 			printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+			success = false;
+		}
+
+		if (TTF_Init() == -1)
+		{
+			printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
 			success = false;
 		}
 
@@ -84,9 +86,101 @@ namespace TextureManager
 		return success;
 	}
 
+	static bool loadFont(const char* path, Uint8 size)
+	{
+		//Loading success flag
+		bool success = true;
+
+		if (font.mFont != nullptr)
+		{
+			TTF_CloseFont(font.mFont);
+			font.mFont = nullptr;
+		}
+
+		//Open the font
+		font.mFont = TTF_OpenFont(path, size);
+		if (font.mFont == NULL)
+		{
+			printf("Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError());
+			success = false;
+		}
+
+		return success;
+	}
+
+
+	bool setText(SDL_Renderer* ren, const char* textureText, Uint8 r, Uint8 g, Uint8 b)
+	{
+
+		if (font.texture.mTexture != nullptr)
+		{
+			SDL_DestroyTexture(font.texture.mTexture);
+			font.texture.mTexture = nullptr;
+		}
+
+		bool success = true;
+
+		SDL_Color color = { r, g, b };
+
+		//Render text surface
+		SDL_Surface* textSurface = TTF_RenderText_Solid(font.mFont, textureText, color);
+		if (textSurface == nullptr)
+		{
+			printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+			success = false;
+			return success;
+		}
+
+		Texture newTexture;
+
+		//Create texture from surface pixels
+		newTexture.mTexture = SDL_CreateTextureFromSurface(ren, textSurface);
+		if (newTexture.mTexture == nullptr)
+		{
+			printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+		}
+		else
+		{
+			//Get image dimensions
+			newTexture.mWidth = textSurface->w;
+			newTexture.mHeight = textSurface->h;
+
+			//Get rid of old loaded surface
+			SDL_FreeSurface(textSurface);
+
+			font.texture = newTexture;
+
+			//text.push_back(font);
+
+		}
+
+		return success;
+	}
 
 	static Texture& getTexture(Uint8 ind)
 	{
 		return textures[ind];
+	}
+
+	static Texture& getFontTexture()
+	{
+		return font.texture;
+	}
+
+	static void freeTextures()
+	{
+		for (auto &tex : textures)
+		{
+			SDL_DestroyTexture(tex.mTexture);
+			tex.mTexture = nullptr;
+		}
+		IMG_Quit();
+
+		if (font.mFont != nullptr)
+		{
+			TTF_CloseFont(font.mFont);
+			font.mFont = nullptr;
+		}
+		TTF_Quit();
 	}
 };

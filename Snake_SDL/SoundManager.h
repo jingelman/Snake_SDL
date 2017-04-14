@@ -71,6 +71,13 @@ namespace SoundManager
 	static void playMusic(Uint8 ind)
 	{
 		Mix_PlayMusic(music[ind].sound, -1);
+		Mix_FadeInMusic(music[ind].sound, -1, 2000);
+	}
+
+	// MIX_MAX_VOLUME is 128
+	static void setMusicVolume(Uint8 vol)
+	{
+		Mix_VolumeMusic(vol);
 	}
 
 	static bool isMusicPlaying()
@@ -104,6 +111,14 @@ namespace SoundManager
 	static void playEffect(Uint8 ind)
 	{
 		Mix_PlayChannel(-1, effects[ind].effect, 0);
+	}
+
+	static void setEffectVolume(Uint8 ind, Uint8 vol)
+	{
+		if (ind > (SoundManager::effects.size() - 1))
+			ind = SoundManager::effects.size() - 1;
+
+		Mix_VolumeChunk(SoundManager::effects[ind].effect, vol);
 	}
 
 	static void freeSoundEffect()

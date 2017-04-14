@@ -7,8 +7,6 @@
 
 #include "RandomGenerator.h"
 
-//#define _DEBUG = 1
-
 #ifdef _DEBUG
 #include <stdio.h>
 #endif
@@ -21,13 +19,6 @@ enum class Direction
 	DOWN
 } direction;
 
-enum GAMESPEED
-{
-	SLOW_FRAMERATE = 10,
-	MEDIUM_FRAMERATE = 20,
-	FAST_FRAMERATE = 30
-} speed;
-
 enum RENDERQUALITY
 {
 	NEAREST,
@@ -39,8 +30,8 @@ Snake::Snake()
 {
 	backgroundArea = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 
-	Uint16 heightBorder = 0.5*(SCREEN_HEIGHT - GAMEAREA_HEIGHT);
-	Uint16 widthBorder = 0.1*SCREEN_HEIGHT;
+	Uint16 heightBorder = 0; // 0.5*(SCREEN_HEIGHT - GAMEAREA_HEIGHT);
+	Uint16 widthBorder = 0;// 0.1*SCREEN_HEIGHT;
 
 	gameArea = { widthBorder, heightBorder, GAMEAREA_WIDTH, GAMEAREA_HEIGHT };
 
@@ -62,13 +53,14 @@ Snake::Snake()
 	BodySprites.push_back({ 2 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 
 	appleSprite = { 0 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE };
+
 }
 
 Snake::~Snake()
 {
 	SoundManager::freeMusic();
 	SoundManager::freeSoundEffect();
-	TextureManager::freeTexture();
+	TextureManager::freeTextures();
 	CoreManager::freeCore();
 }
 
@@ -125,13 +117,15 @@ bool Snake::loadMedia()
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToBackground))
 		success = false;
 
-	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathTograss))
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToGrass))
 		success = false;
 
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToSprite))
 		success = false;
-
-
+	
+	if (!TextureManager::loadFont(pathToFont, 60))
+		success = false;
+		
 	return success;
 }
 
@@ -145,39 +139,71 @@ void Snake::setupGame()
 
 	direction = Direction::RIGHT;
 
-	applePos = addApple();
+	appleCounter = 0;
 
-	speed = GAMESPEED::SLOW_FRAMERATE;
+	addApple();
+
+	textPos = { (GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2, (GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+
+	gameSpeed = startSpeed;
+
 }
 
 void Snake::gameLoop()
 {
+	if (appleCounter > HighScore)
+		HighScore = appleCounter;
+
+	updatePos();
+	updateSprites();
+	render();
+}
+
+void Snake::eventLoop()
+{
 	bool quit = false;
 	SDL_Event event;
+
+	SoundManager::setMusicVolume(5);
+	SoundManager::setEffectVolume(0, 30);
+	SoundManager::setEffectVolume(1, 10);
+
+	gameLoop();
 
 	while (!quit)
 	{
 		while (SDL_PollEvent(&event) != 0) {
-			//SDL_PollEvent(&event);
+
+			// x window button
+			if (event.type == SDL_QUIT)
+			{
+				quit = true;
+			}
 
 			if (event.type == SDL_KEYDOWN) {
+
+				isStarted = true;
 
 				auto key = event.key.keysym.sym;
 				switch (key)
 				{
 				case SDLK_UP:
+				case SDLK_w:
 					if (direction != Direction::DOWN)
 						direction = Direction::UP;// input = true;
 					break;
 				case SDLK_RIGHT:
+				case SDLK_d:
 					if (direction != Direction::LEFT)
 						direction = Direction::RIGHT;// input = true;
 					break;
 				case SDLK_LEFT:
+				case SDLK_a:
 					if (direction != Direction::RIGHT)
 						direction = Direction::LEFT;// input = true;
 					break;
 				case SDLK_DOWN:
+				case SDLK_s:
 					if (direction != Direction::UP)
 						direction = Direction::DOWN;// input = true;
 					break;
@@ -193,24 +219,16 @@ void Snake::gameLoop()
 						SoundManager::pauseMusic();
 					}
 					break;
-				case SDLK_j:
-				{
-					speed = GAMESPEED::SLOW_FRAMERATE;
-					break;
-				}
-				case SDLK_k:
-				{
-					speed = GAMESPEED::MEDIUM_FRAMERATE;
-					break;
-				}
-				case SDLK_l:
-				{
-					speed = GAMESPEED::FAST_FRAMERATE;
-					break;
-				}
 				case SDLK_SPACE:
-					TimerManager::startTimer();
-					setupGame();
+					if (hasLost)
+					{
+						isStarted = false;
+						hasLost = false;
+						SoundManager::pauseMusic();
+						TimerManager::startTimer();
+						setupGame();
+						gameLoop();
+					}
 					break;
 				case SDLK_ESCAPE: quit = true;
 				default:
@@ -220,13 +238,13 @@ void Snake::gameLoop()
 		}
 
 		//If we want to cap the frame rate
-		if (TimerManager::isFrameCap() && TimerManager::getTicks() < (Uint32)1000 / speed)
+		if (TimerManager::isFrameCap() && TimerManager::getTicks() < (Uint32)1000 / gameSpeed)
 		{
 			//Sleep the remaining frame time
-			SDL_Delay(1000 / speed - TimerManager::getTicks());
+			SDL_Delay(1000 / gameSpeed - TimerManager::getTicks());
 		}
 
-		if (TimerManager::isTimerStarted())
+		if (TimerManager::isTimerStarted() && isStarted)
 		{
 			TimerManager::startTimer();
 
@@ -239,15 +257,21 @@ void Snake::gameLoop()
 			{
 				if (!hitWall(recSnake[0]) && !hitBody(recSnake))
 				{
-					updatePos();
-					updateSprites();
-					render();
+					gameLoop();
 				}
 				else
 				{
+					hasLost = true;
+
 					TimerManager::stopTimer();
 					SoundManager::pauseMusic();
 					SoundManager::playEffect(1);
+
+					// Render one extra frame to render text
+					gameLoop();
+#if _DEBUG
+					printf("You ate %i apples!\n", getAppleCounter());
+#endif
 				}
 			}
 		}
@@ -256,27 +280,26 @@ void Snake::gameLoop()
 
 void Snake::updatePos()
 {
+	SDL_Rect temp;
+	bool ateApple = false;
+
 	switch (direction)
 	{
 	case Direction::UP:
 #if _DEBUG
 		printf("Going up!\n");
 #endif
-		auto temp = recSnake[recSnake.size() - 1];
+		temp = recSnake[recSnake.size() - 1];
 
 		for (auto i = recSnake.size() - 1; i > 0; --i)
 		{
 			recSnake[i] = recSnake[i - 1];
 		}
 		recSnake[0].y -= TILE_SIZE;
-
+		
 		if (hitApple(recSnake[0]))
-		{
-			SoundManager::playEffect(0);
-			applePos = addApple();
-			recSnake.push_back(temp);
-		}
-
+			ateApple = true;
+		
 		break;
 	case Direction::RIGHT:
 #if _DEBUG
@@ -292,11 +315,7 @@ void Snake::updatePos()
 		recSnake[0].x += TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
-		{
-			SoundManager::playEffect(0);
-			applePos = addApple();
-			recSnake.push_back(temp);
-		}
+			ateApple = true;
 
 		break;
 	case Direction::LEFT:
@@ -313,11 +332,7 @@ void Snake::updatePos()
 		recSnake[0].x -= TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
-		{
-			SoundManager::playEffect(0);
-			applePos = addApple();
-			recSnake.push_back(temp);
-		}
+			ateApple = true;
 
 		break;
 	case Direction::DOWN:
@@ -334,15 +349,21 @@ void Snake::updatePos()
 		recSnake[0].y += TILE_SIZE;
 
 		if (hitApple(recSnake[0]))
-		{
-			SoundManager::playEffect(0);
-			applePos = addApple();
-			recSnake.push_back(temp);
-		}
-
+			ateApple = true;
+		
 		break;
 	default:
 		break;
+	}
+
+	if (ateApple)
+	{
+		SoundManager::playEffect(0);
+		recSnake.push_back(temp);
+		incrAppleCounter();
+		addApple();
+		if (appleCounter % 5 == 0)
+			++gameSpeed;
 	}
 
 }
@@ -410,25 +431,74 @@ void Snake::render()
 {
 	CoreManager::SetRenderColor(255, 255, 255, 255);
 	CoreManager::clearRenderer();
+
 	CoreManager::SetViewport(&backgroundArea);
+	CoreManager::RenderCopy(TextureManager::getTexture(0));
 
-	CoreManager::RenderCopy(TextureManager::textures[0]);
+
+	TextureManager::setText(CoreManager::getRenderer(), "High Score:", 0, 0, 0);
+	textPos = { 49*(SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 2*(SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
+	
+
+	char snum[10];
+	sprintf_s(snum, "%i", HighScore);
+	TextureManager::setText(CoreManager::getRenderer(), snum, 0, 0, 0);
+
+	textPos = { 40 * (SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 10 * (SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, 3*TextureManager::font.texture.mWidth, 3*TextureManager::font.texture.mHeight };
+	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
+	
+	
 	CoreManager::SetViewport(&gameArea);
-
-	CoreManager::RenderCopy(TextureManager::textures[1]);
+	
+	CoreManager::RenderCopy(TextureManager::getTexture(1));
 
 	for (auto i = 0; i < tempPos.size(); ++i)
 	{
-		CoreManager::RenderCopy(TextureManager::textures[2], &tempPos[i], &recSnake[i]);
+		CoreManager::RenderCopy(TextureManager::getTexture(2), &tempPos[i], &recSnake[i]);
 	}
 
-	CoreManager::RenderCopy(TextureManager::textures[2], &appleSprite, &applePos);
-	CoreManager::SetViewport(&gameArea);
+	CoreManager::RenderCopy(TextureManager::getTexture(2), &appleSprite, &applePos);
+	
+	if (!isStarted && !hasLost)
+	{
+		TextureManager::setText(CoreManager::getRenderer(), "Press any key to start", 0, 0, 0);
+		textPos = { (GAMEAREA_WIDTH  - TextureManager::font.texture.mWidth) / 2, (GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+		CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
 
+		textPos.y *= 1.5;
+
+		TextureManager::setText(CoreManager::getRenderer(), "(Use the Arrow keys or WASD to to change direction)", 0, 0, 0);
+		CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
+	}
+
+	if (isStarted && hasLost)
+	{
+		//TODO inline finction
+		char buf[20], snum[10];
+		sprintf_s(snum, "%i", appleCounter);
+		snprintf(buf, sizeof buf, "%s%s%s", "You ate ", snum, " apples!");
+
+		TextureManager::setText(CoreManager::getRenderer(), buf, 0, 0, 0);
+
+		textPos = { (GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2, (GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+
+		CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
+
+		TextureManager::setText(CoreManager::getRenderer(), "Press 'Spacebar' to play again", 0, 0, 0);
+
+		textPos.y *= 1.5;
+
+		CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
+	}
+
+
+	CoreManager::SetViewport(&gameArea);
+	
 	CoreManager::render();
 }
 
-SDL_Rect Snake::addApple()
+void Snake::addApple()
 {
 	bool freePos;
 
@@ -438,8 +508,8 @@ SDL_Rect Snake::addApple()
 	{
 		freePos = true;
 
-		Uint8 posX = randomNumber(0, 11);
-		Uint8 posY = randomNumber(0, 10);
+		Uint8 posX = randomNumber(0, tilesWidth - 1);
+		Uint8 posY = randomNumber(0, tilesHeight - 1);
 
 		temp = { posX * TILE_SIZE , posY * TILE_SIZE , TILE_SIZE, TILE_SIZE };
 
@@ -450,7 +520,7 @@ SDL_Rect Snake::addApple()
 		}
 	} while (!freePos);
 
-	return temp;
+	applePos = temp;
 }
 
 bool Snake::hitApple(const SDL_Rect& head) const
