@@ -96,9 +96,9 @@ namespace CoreManager {
 				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 				success = false;
 			}
-
-			return success;
 		}
+
+		return success;
 	}
 
 	static bool SetRenderColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a)

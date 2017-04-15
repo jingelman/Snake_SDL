@@ -482,11 +482,6 @@ void Snake::render()
 
 	if (isStarted && hasLost)
 	{
-		//TODO inline finction
-		//char buf[20], snum[10];
-		//sprintf_s(snum, "%i", appleCounter);
-		//snprintf(buf, sizeof buf, "%s%s%s", "You ate ", snum, " apples!");
-
 		std::string buf = "You ate " + std::to_string(appleCounter) + " apples!";
 
 		TextureManager::setText(CoreManager::getRenderer(), buf.c_str(), 0, 0, 0);
