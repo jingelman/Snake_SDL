@@ -71,7 +71,5 @@ private: // Variables
 	const Uint16 tilesHeight = 25;
 
 	const Uint16 GAMEAREA_WIDTH = tilesWidth * TILE_SIZE;
-	//const Uint16 GAMEAREA_HEIGHT = tilesHeight * TILE_SIZE;
 	const Uint16 GAMEAREA_HEIGHT = SCREEN_HEIGHT;
-
 };

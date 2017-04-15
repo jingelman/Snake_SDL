@@ -7,6 +7,8 @@
 
 #include "RandomGenerator.h"
 
+#include <string>
+
 #ifdef _DEBUG
 #include <stdio.h>
 #endif
@@ -30,10 +32,7 @@ Snake::Snake()
 {
 	backgroundArea = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 
-	Uint16 heightBorder = 0; // 0.5*(SCREEN_HEIGHT - GAMEAREA_HEIGHT);
-	Uint16 widthBorder = 0;// 0.1*SCREEN_HEIGHT;
-
-	gameArea = { widthBorder, heightBorder, GAMEAREA_WIDTH, GAMEAREA_HEIGHT };
+	gameArea = { 0, 0, GAMEAREA_WIDTH, GAMEAREA_HEIGHT };
 
 	HeadSprites.push_back({ 3 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 	HeadSprites.push_back({ 4 * SPRITE_SIZE, 0 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
@@ -53,7 +52,6 @@ Snake::Snake()
 	BodySprites.push_back({ 2 * SPRITE_SIZE, 2 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE });
 
 	appleSprite = { 0 * SPRITE_SIZE, 3 * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE };
-
 }
 
 Snake::~Snake()
@@ -122,10 +120,10 @@ bool Snake::loadMedia()
 
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), pathToSprite))
 		success = false;
-	
+
 	if (!TextureManager::loadFont(pathToFont, 60))
 		success = false;
-		
+
 	return success;
 }
 
@@ -162,6 +160,8 @@ void Snake::gameLoop()
 void Snake::eventLoop()
 {
 	bool quit = false;
+	bool hasMoved = true;
+
 	SDL_Event event;
 
 	SoundManager::setMusicVolume(5);
@@ -172,8 +172,8 @@ void Snake::eventLoop()
 
 	while (!quit)
 	{
-		while (SDL_PollEvent(&event) != 0) {
-
+		while (SDL_PollEvent(&event) != 0 && hasMoved)
+		{
 			// x window button
 			if (event.type == SDL_QUIT)
 			{
@@ -184,28 +184,35 @@ void Snake::eventLoop()
 
 				isStarted = true;
 
-				auto key = event.key.keysym.sym;
-				switch (key)
+				switch (event.key.keysym.sym)
 				{
 				case SDLK_UP:
 				case SDLK_w:
-					if (direction != Direction::DOWN)
-						direction = Direction::UP;// input = true;
+					if (direction != Direction::DOWN) {
+						direction = Direction::UP;
+						hasMoved = false;
+					}
 					break;
 				case SDLK_RIGHT:
 				case SDLK_d:
-					if (direction != Direction::LEFT)
-						direction = Direction::RIGHT;// input = true;
+					if (direction != Direction::LEFT) {
+						direction = Direction::RIGHT;
+						hasMoved = false;
+					}
 					break;
 				case SDLK_LEFT:
 				case SDLK_a:
-					if (direction != Direction::RIGHT)
-						direction = Direction::LEFT;// input = true;
+					if (direction != Direction::RIGHT) {
+						direction = Direction::LEFT;
+						hasMoved = false;
+					}
 					break;
 				case SDLK_DOWN:
 				case SDLK_s:
-					if (direction != Direction::UP)
-						direction = Direction::DOWN;// input = true;
+					if (direction != Direction::UP) {
+						direction = Direction::DOWN;
+						hasMoved = false;
+					}
 					break;
 				case SDLK_p:
 					if (!TimerManager::isTimerStarted() && TimerManager::isTimerPaused())
@@ -275,6 +282,7 @@ void Snake::eventLoop()
 				}
 			}
 		}
+		hasMoved = true;
 	}
 }
 
@@ -296,10 +304,10 @@ void Snake::updatePos()
 			recSnake[i] = recSnake[i - 1];
 		}
 		recSnake[0].y -= TILE_SIZE;
-		
+
 		if (hitApple(recSnake[0]))
 			ateApple = true;
-		
+
 		break;
 	case Direction::RIGHT:
 #if _DEBUG
@@ -350,7 +358,7 @@ void Snake::updatePos()
 
 		if (hitApple(recSnake[0]))
 			ateApple = true;
-		
+
 		break;
 	default:
 		break;
@@ -437,20 +445,20 @@ void Snake::render()
 
 
 	TextureManager::setText(CoreManager::getRenderer(), "High Score:", 0, 0, 0);
-	textPos = { 49*(SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 2*(SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+	textPos = { 49 * (SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 2 * (SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
-	
+
 
 	char snum[10];
 	sprintf_s(snum, "%i", HighScore);
 	TextureManager::setText(CoreManager::getRenderer(), snum, 0, 0, 0);
 
-	textPos = { 40 * (SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 10 * (SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, 3*TextureManager::font.texture.mWidth, 3*TextureManager::font.texture.mHeight };
+	textPos = { 40 * (SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 10 * (SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, 3 * TextureManager::font.texture.mWidth, 3 * TextureManager::font.texture.mHeight };
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
-	
-	
+
+
 	CoreManager::SetViewport(&gameArea);
-	
+
 	CoreManager::RenderCopy(TextureManager::getTexture(1));
 
 	for (auto i = 0; i < tempPos.size(); ++i)
@@ -459,11 +467,11 @@ void Snake::render()
 	}
 
 	CoreManager::RenderCopy(TextureManager::getTexture(2), &appleSprite, &applePos);
-	
+
 	if (!isStarted && !hasLost)
 	{
 		TextureManager::setText(CoreManager::getRenderer(), "Press any key to start", 0, 0, 0);
-		textPos = { (GAMEAREA_WIDTH  - TextureManager::font.texture.mWidth) / 2, (GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+		textPos = { (GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2, (GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
 		CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &textPos);
 
 		textPos.y *= 1.5;
@@ -475,11 +483,13 @@ void Snake::render()
 	if (isStarted && hasLost)
 	{
 		//TODO inline finction
-		char buf[20], snum[10];
-		sprintf_s(snum, "%i", appleCounter);
-		snprintf(buf, sizeof buf, "%s%s%s", "You ate ", snum, " apples!");
+		//char buf[20], snum[10];
+		//sprintf_s(snum, "%i", appleCounter);
+		//snprintf(buf, sizeof buf, "%s%s%s", "You ate ", snum, " apples!");
 
-		TextureManager::setText(CoreManager::getRenderer(), buf, 0, 0, 0);
+		std::string buf = "You ate " + std::to_string(appleCounter) + " apples!";
+
+		TextureManager::setText(CoreManager::getRenderer(), buf.c_str(), 0, 0, 0);
 
 		textPos = { (GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2, (GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
 
@@ -494,7 +504,7 @@ void Snake::render()
 
 
 	CoreManager::SetViewport(&gameArea);
-	
+
 	CoreManager::render();
 }
 
