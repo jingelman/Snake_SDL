@@ -8,10 +8,8 @@ namespace TimerManager
 	{
 		Uint32 startTicks;
 		Uint32 pausedTicks;
-		Uint8 frameCap;
 		bool isPaused;
 		bool isStarted;
-		bool isFrameCap = false;
 	} static timer;;
 
 	static void startTimer()
@@ -35,7 +33,7 @@ namespace TimerManager
 
 	static bool isTimerStoped()
 	{
-		return timer.isPaused;
+		return timer.isPaused && !timer.isStarted;
 	}
 
 	static void stopTimer()
@@ -76,15 +74,5 @@ namespace TimerManager
 				time = SDL_GetTicks() - timer.startTicks;
 
 		return time;
-	}
-
-	static void setFrameCap(bool cap)
-	{
-		timer.isFrameCap = cap;
-	}
-
-	static bool isFrameCap()
-	{
-		return timer.isFrameCap;
 	}
 };

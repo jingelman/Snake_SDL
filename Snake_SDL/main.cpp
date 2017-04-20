@@ -19,7 +19,7 @@ int main(int argc, char* args[])
 	}
 
 	// Run game
-	snake.eventLoop();
+	snake.appLoop();
 
 	return 0;
 }

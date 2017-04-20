@@ -11,7 +11,8 @@ public:
 
 	bool init();
 	bool loadMedia();
-	void gameLoop();
+	void appLoop();
+	void gameLoop(float dt);
 	void eventLoop();
 	
 private: // Methods
@@ -20,6 +21,10 @@ private: // Methods
 	void updatePos();
 	void updateSprites();
 	void render();
+
+	void renderStartText();
+	void renderEndText();
+	void highScoreText();
 
 	void addApple();
 	void incrAppleCounter() { ++appleCounter; }
@@ -31,11 +36,14 @@ private: // Methods
 
 private: // Variables
 
+	float movment = 0;
+	float vel = 300.f;
+
 	bool hasLost = false;
-	bool isStarted = false;
+	bool isPaused;
+	bool quit;
 	
 	Uint8 startSpeed = 10;
-	Uint8 gameSpeed;
 	Uint8 appleCounter = 0;
 	Uint8 HighScore = 0;
 
@@ -51,7 +59,7 @@ private: // Variables
 	std::vector<SDL_Rect> TailSprites;
 	std::vector<SDL_Rect> BodySprites;
 
-	const char* pathToFont = "resource/font/Sergey Oleynik - Mateur.ttf";
+	const char* pathToFont = "resource/font/BADABB__.ttf";
 
 	const char* pathToBackground = "resource/texture/backgrund.jpg";
 	const char* pathToSprite = "resource/texture/sprites.png";
