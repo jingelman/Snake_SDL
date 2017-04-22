@@ -6,8 +6,8 @@ namespace TimerManager
 {
 	struct Timer
 	{
-		Uint32 startTicks;
-		Uint32 pausedTicks;
+		uint32_t startTicks;
+		uint32_t pausedTicks;
 		bool isPaused;
 		bool isStarted;
 	} static timer;;
@@ -33,7 +33,7 @@ namespace TimerManager
 
 	static bool isTimerStoped()
 	{
-		return timer.isPaused && !timer.isStarted;
+		return !timer.isPaused && !timer.isStarted;
 	}
 
 	static void stopTimer()
@@ -63,9 +63,9 @@ namespace TimerManager
 		timer.pausedTicks = 0;
 	}
 
-	static Uint32 getTicks()
+	static uint32_t getTicks()
 	{
-		Uint32 time = 0;
+		uint32_t time = 0;
 
 		if (timer.isStarted)
 			if (timer.isPaused)

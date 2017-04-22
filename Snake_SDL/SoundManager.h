@@ -68,14 +68,14 @@ namespace SoundManager
 		return success;
 	}
 
-	static void playMusic(Uint8 ind)
+	static void playMusic(uint8_t ind)
 	{
 		Mix_PlayMusic(music[ind].sound, -1);
 		Mix_FadeInMusic(music[ind].sound, -1, 2000);
 	}
 
 	// MIX_MAX_VOLUME is 128
-	static void setMusicVolume(Uint8 vol)
+	static void setMusicVolume(uint8_t vol)
 	{
 		Mix_VolumeMusic(vol);
 	}
@@ -108,12 +108,12 @@ namespace SoundManager
 		}
 	}
 
-	static void playEffect(Uint8 ind)
+	static void playEffect(uint8_t ind)
 	{
 		Mix_PlayChannel(-1, effects[ind].effect, 0);
 	}
 
-	static void setEffectVolume(Uint8 ind, Uint8 vol)
+	static void setEffectVolume(uint8_t ind, uint8_t vol)
 	{
 		if (ind > (SoundManager::effects.size() - 1))
 			ind = SoundManager::effects.size() - 1;

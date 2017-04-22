@@ -59,7 +59,7 @@ namespace CoreManager {
 		return success;
 	}
 
-	static bool CreateWindow(const char* title, const Uint32 w, const Uint32 h)
+	static bool CreateWindow(const char* title, const uint32_t w, const uint32_t h)
 	{
 		bool success = true;
 
@@ -90,7 +90,7 @@ namespace CoreManager {
 		}
 		else {
 
-			core.renderer = SDL_CreateRenderer(core.window, -1, SDL_RENDERER_ACCELERATED);
+			core.renderer = SDL_CreateRenderer(core.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 			if (core.renderer == nullptr)
 			{
 				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
@@ -101,7 +101,7 @@ namespace CoreManager {
 		return success;
 	}
 
-	static bool SetRenderColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+	static bool SetRenderColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 	{
 		bool success = true;
 

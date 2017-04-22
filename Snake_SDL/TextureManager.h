@@ -22,7 +22,7 @@ namespace TextureManager
 	{
 		bool success = true;
 
-		Uint8 imgFlags = IMG_INIT_PNG;
+		uint8_t imgFlags = IMG_INIT_PNG;
 		if (!(IMG_Init(imgFlags) & imgFlags))
 		{
 			printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
@@ -86,7 +86,7 @@ namespace TextureManager
 		return success;
 	}
 
-	static bool loadFont(const char* path, Uint8 size)
+	static bool loadFont(const char* path, uint8_t size)
 	{
 		//Loading success flag
 		bool success = true;
@@ -109,7 +109,7 @@ namespace TextureManager
 	}
 
 
-	bool setText(SDL_Renderer* ren, const char* textureText, Uint8 r, Uint8 g, Uint8 b)
+	bool setText(SDL_Renderer* ren, const char* textureText, uint8_t r, uint8_t g, uint8_t b)
 	{
 
 		if (font.texture.mTexture != nullptr)
@@ -149,15 +149,12 @@ namespace TextureManager
 			SDL_FreeSurface(textSurface);
 
 			font.texture = newTexture;
-
-			//text.push_back(font);
-
 		}
 
 		return success;
 	}
 
-	static Texture& getTexture(Uint8 ind)
+	static Texture& getTexture(uint8_t ind)
 	{
 		return textures[ind];
 	}

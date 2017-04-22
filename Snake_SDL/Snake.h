@@ -10,74 +10,82 @@ public:
 	~Snake();
 
 	bool init();
-	bool loadMedia();
-	void appLoop();
-	void gameLoop(float dt);
-	void eventLoop();
-	
+	bool load_media();
+	void game_loop();
+
 private: // Methods
 
-	void setupGame();
-	void updatePos();
-	void updateSprites();
+	void setup_game();
+
+	void event_loop();
+
+	void update_apple_position();
+	void update_snake_position();
+	void update_sprites();
+	void update_simulation(float dt);
+
+	void add_apple();
+
+	bool hit_wall(const SDL_Rect& head) const;
+	bool hit_apple(const SDL_Rect& head) const;
+	bool hit_object(const SDL_Rect &object, bool head);
+
+	void render_pass_background();
+	void render_pass_gamearea();
+	void render_pass_instruction_text();
+	void render_pass_start_text();
+	void render_pass_lost_text();
+	void render_pass_highscore_text();
+	void render_pass_snake();
+
 	void render();
-
-	void renderStartText();
-	void renderEndText();
-	void highScoreText();
-
-	void addApple();
-	void incrAppleCounter() { ++appleCounter; }
-	const Uint16& getAppleCounter() { return appleCounter; }
-
-	bool hitWall(const SDL_Rect& head) const;
-	bool hitApple(const SDL_Rect& head) const;
-	bool Snake::hitBody(const std::vector<SDL_Rect>& snake);
 
 private: // Variables
 
-	float movment = 0;
-	float vel = 300.f;
-
-	bool hasLost = false;
-	bool isPaused;
 	bool quit;
-	
-	Uint8 startSpeed = 10;
-	Uint8 appleCounter = 0;
-	Uint8 HighScore = 0;
+	bool m_hasLost = false;
+	bool m_isPaused;
+	bool first_game = true;
+	bool double_speed = false;
+	bool render_intro_text;
+	bool render_high_score;
 
-	SDL_Rect backgroundArea;
-	SDL_Rect gameArea;
-	SDL_Rect applePos;
-	SDL_Rect appleSprite;
-	SDL_Rect textPos;
+	const float C_SPEEDUP = 1.5f;
+	const float C_START_SPEED = 320.f;
+	float velocity = C_START_SPEED;
 
-	std::vector<SDL_Rect> recSnake;
-	std::vector<SDL_Rect> tempPos;
-	std::vector<SDL_Rect> HeadSprites;
-	std::vector<SDL_Rect> TailSprites;
-	std::vector<SDL_Rect> BodySprites;
+	uint8_t apple_counter = 0;
+	uint8_t highscore_counter = 0;
 
-	const char* pathToFont = "resource/font/BADABB__.ttf";
+	SDL_Rect background_area;
+	SDL_Rect game_area;
+	SDL_Rect apple_position;
+	SDL_Rect apple_sprite;
+	SDL_Rect text_position;
 
-	const char* pathToBackground = "resource/texture/backgrund.jpg";
-	const char* pathToSprite = "resource/texture/sprites.png";
-	const char* pathToGrass = "resource/texture/grass.jpg";
+	std::vector<SDL_Rect> rec_snake;
+	std::vector<SDL_Rect> temp_position;
+	std::vector<SDL_Rect> head_sprites;
+	std::vector<SDL_Rect> tail_sprites;
+	std::vector<SDL_Rect> body_sprites;
 
-	const char* pathToMusic = "resource/sound/369920__mrthenoronha__cartoon-game-theme-loop.wav";
-	const char* pathToLoseEffect = "resource/sound/333785__projectsu012__8-bit-failure-sound.wav";
-	const char* pathToEatEffect = "resource/sound/20265__koops__apple-crunch-02.wav";
+	const uint16_t C_TILE_SIZE = 32;
+	const uint16_t C_SPRITE_SIZE = 64;
 
-	const Uint16 TILE_SIZE = 32;
-	const Uint16 SPRITE_SIZE = 64;
+	const uint16_t C_SCREEN_WIDTH = 1280;
+	const uint16_t C_SCREEN_HEIGHT = 800;
 
-	const Uint16 SCREEN_WIDTH = 1280;
-	const Uint16 SCREEN_HEIGHT = 800;
+	const uint16_t C_TILE_WIDTH = 28;
+	const uint16_t C_TILE_HEIGHT = 25;
 
-	const Uint16 tilesWidth = 28;
-	const Uint16 tilesHeight = 25;
+	const uint16_t C_GAMEAREA_WIDTH = C_TILE_WIDTH * C_TILE_SIZE;
+	const uint16_t C_GAMEAREA_HEIGHT = C_SCREEN_HEIGHT;
 
-	const Uint16 GAMEAREA_WIDTH = tilesWidth * TILE_SIZE;
-	const Uint16 GAMEAREA_HEIGHT = SCREEN_HEIGHT;
+	const char* path_to_font = "resource/font/BADABB__.ttf";
+	const char* path_to_background_texture = "resource/texture/backgrund.jpg";
+	const char* path_to_sprite_texture = "resource/texture/sprites.png";
+	const char* path_to_grass_texture = "resource/texture/grass.jpg";
+	const char* path_to_music = "resource/sound/369920__mrthenoronha__cartoon-game-theme-loop.wav";
+	const char* path_to_lose_effect = "resource/sound/333785__projectsu012__8-bit-failure-sound.wav";
+	const char* path_to_eat_effect = "resource/sound/20265__koops__apple-crunch-02.wav";
 };
