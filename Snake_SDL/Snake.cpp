@@ -63,8 +63,6 @@ Snake::Snake()
 	body_sprites.push_back({ 2 * C_SPRITE_SIZE, 2 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE });
 
 	apple_sprite = { 0 * C_SPRITE_SIZE, 3 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE };
-
-	
 }
 
 /*
@@ -137,13 +135,13 @@ bool Snake::load_media()
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_grass_texture))
 		success = false;
 
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_board_texture))
+		success = false;
+
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_sprite_texture))
 		success = false;
 
 	if (!TextureManager::loadFont(path_to_font, 80))
-		success = false;
-
-	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_board_texture))
 		success = false;
 
 	return success;
@@ -590,7 +588,6 @@ void Snake::render_pass_lost_text()
 	CoreManager::SetViewport(&game_area);
 
 	std::string buf = "You ate " + std::to_string(apple_counter) + " apples!";
-
 	TextureManager::setText(CoreManager::getRenderer(), buf.c_str(), 255, 255, 255);
 	text_position.x = (C_GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
 	text_position.y = 0.4*(C_GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight);
