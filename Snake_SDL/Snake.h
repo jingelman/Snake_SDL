@@ -32,6 +32,8 @@ private: // Methods
 
 	void render_pass_background();
 	void render_pass_gamearea();
+	void render_pass_highscore_board();
+	void render_pass_text_board();
 	void render_pass_instruction_text();
 	void render_pass_start_text();
 	void render_pass_lost_text();
@@ -48,7 +50,7 @@ private: // Variables
 	bool first_game = true;
 	bool double_speed = false;
 	bool render_intro_text;
-	bool render_high_score;
+	bool render_score_board;
 
 	const float C_SPEEDUP = 1.5f;
 	const float C_START_SPEED = 320.f;
@@ -59,6 +61,8 @@ private: // Variables
 
 	SDL_Rect background_area;
 	SDL_Rect game_area;
+	SDL_Rect highscore_board_area;
+	SDL_Rect text_board_area;
 	SDL_Rect apple_position;
 	SDL_Rect apple_sprite;
 	SDL_Rect text_position;
@@ -81,8 +85,15 @@ private: // Variables
 	const uint16_t C_GAMEAREA_WIDTH = C_TILE_WIDTH * C_TILE_SIZE;
 	const uint16_t C_GAMEAREA_HEIGHT = C_SCREEN_HEIGHT;
 
+	const uint16_t C_SCOREBOARDAREA_WIDTH = C_SCREEN_WIDTH - C_GAMEAREA_WIDTH;
+	const uint16_t C_SCOREBOARDAREA_HEIGHT = 0.42 * C_GAMEAREA_HEIGHT;
+
+	const uint16_t C_TEXTBOARDAREA_WIDTH = 0.98*C_GAMEAREA_WIDTH;
+	const uint16_t C_TEXTBOARDAREA_HEIGHT = 0.5*C_GAMEAREA_HEIGHT;
+
 	const char* path_to_font = "resource/font/BADABB__.ttf";
 	const char* path_to_background_texture = "resource/texture/backgrund.jpg";
+	const char* path_to_board_texture = "resource/texture/board.jpg";
 	const char* path_to_sprite_texture = "resource/texture/sprites.png";
 	const char* path_to_grass_texture = "resource/texture/grass.jpg";
 	const char* path_to_music = "resource/sound/369920__mrthenoronha__cartoon-game-theme-loop.wav";

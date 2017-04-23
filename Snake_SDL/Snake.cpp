@@ -41,6 +41,10 @@ Snake::Snake()
 
 	game_area = { 0, 0, C_GAMEAREA_WIDTH, C_GAMEAREA_HEIGHT };
 
+	highscore_board_area = { C_GAMEAREA_WIDTH, 0, C_SCOREBOARDAREA_WIDTH, C_SCOREBOARDAREA_HEIGHT };
+
+	text_board_area = { (C_GAMEAREA_WIDTH - C_TEXTBOARDAREA_WIDTH) / 2, (C_GAMEAREA_HEIGHT - C_TEXTBOARDAREA_HEIGHT) / 2, C_TEXTBOARDAREA_WIDTH, C_TEXTBOARDAREA_HEIGHT };
+
 	head_sprites.push_back({ 3 * C_SPRITE_SIZE, 0 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE });
 	head_sprites.push_back({ 4 * C_SPRITE_SIZE, 0 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE });
 	head_sprites.push_back({ 3 * C_SPRITE_SIZE, 1 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE });
@@ -59,6 +63,8 @@ Snake::Snake()
 	body_sprites.push_back({ 2 * C_SPRITE_SIZE, 2 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE });
 
 	apple_sprite = { 0 * C_SPRITE_SIZE, 3 * C_SPRITE_SIZE, C_SPRITE_SIZE, C_SPRITE_SIZE };
+
+	
 }
 
 /*
@@ -137,6 +143,9 @@ bool Snake::load_media()
 	if (!TextureManager::loadFont(path_to_font, 80))
 		success = false;
 
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_board_texture))
+		success = false;
+
 	return success;
 }
 
@@ -158,8 +167,10 @@ void Snake::setup_game()
 
 	velocity = C_START_SPEED;
 
+	//m_hasLost = false;
 	m_isPaused = true;
 	render_intro_text = true;
+	render_score_board = true;
 
 	direction = Direction::RIGHT;
 	update_sprites();
@@ -260,7 +271,7 @@ void Snake::game_loop()
 	float dt = 0;
 
 	quit = false;
-	render_high_score = true;
+	render_score_board = true;
 
 	setup_game();
 
@@ -420,8 +431,9 @@ void Snake::update_snake_position()
 		if (apple_counter > highscore_counter)
 		{
 			highscore_counter = apple_counter;
-			render_high_score = true;
 		}
+
+		render_score_board = true;
 	}
 }
 
@@ -505,32 +517,52 @@ void Snake::render_pass_gamearea()
 }
 
 /*
+* Copy borad texture for highscore to the renderer
+*/
+void Snake::render_pass_highscore_board()
+{
+	CoreManager::SetViewport(&highscore_board_area);
+	CoreManager::RenderCopy(TextureManager::getTexture(3));
+}
+
+/*
+* Copy borad texture for text to the renderer
+*/
+void Snake::render_pass_text_board()
+{
+	CoreManager::SetViewport(&text_board_area);
+	CoreManager::RenderCopy(TextureManager::getTexture(3));
+}
+
+/*
 * Copy instruction text to the renderer
 */
 void Snake::render_pass_instruction_text()
 {
-	TextureManager::setText(CoreManager::getRenderer(), "Use the Arrow keys or WASD to navigate", 0, 0, 0);
+	CoreManager::SetViewport(&game_area);
+
+	TextureManager::setText(CoreManager::getRenderer(), "Use the Arrow keys or WASD to navigate.", 255, 255, 255);
 	text_position.x = (C_GAMEAREA_WIDTH - 0.7*TextureManager::font.texture.mWidth) / 2;
 	text_position.y = (C_GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3;
 	text_position.w = 0.7*TextureManager::font.texture.mWidth;
 	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 
-	TextureManager::setText(CoreManager::getRenderer(), "Press LCTRL/RCTRL to move faster", 0, 0, 0);
+	TextureManager::setText(CoreManager::getRenderer(), "Press LCTRL/RCTRL to move faster.", 255, 255, 255);
 	text_position.x = (C_GAMEAREA_WIDTH - 0.7*TextureManager::font.texture.mWidth) / 2;
 	text_position.y += 0.1*C_GAMEAREA_HEIGHT;
 	text_position.w = 0.7*TextureManager::font.texture.mWidth;
 	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 
-	TextureManager::setText(CoreManager::getRenderer(), "Press again to gain normal speed", 0, 0, 0);
+	TextureManager::setText(CoreManager::getRenderer(), "Press again to get normal speed.", 255, 255, 255);
 	text_position.x = (C_GAMEAREA_WIDTH - 0.7*TextureManager::font.texture.mWidth) / 2;
 	text_position.y += 0.1*C_GAMEAREA_HEIGHT;
 	text_position.w = 0.7*TextureManager::font.texture.mWidth;
 	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 
-	TextureManager::setText(CoreManager::getRenderer(), "Press any key to start", 0, 0, 0);
+	TextureManager::setText(CoreManager::getRenderer(), "Press any key to start.", 255, 255, 255);
 	text_position.x = (C_GAMEAREA_WIDTH - 0.7*TextureManager::font.texture.mWidth) / 2;
 	text_position.y += 0.1*C_GAMEAREA_HEIGHT;
 	text_position.w = 0.7*TextureManager::font.texture.mWidth;
@@ -545,7 +577,7 @@ void Snake::render_pass_start_text()
 {
 	CoreManager::SetViewport(&game_area);
 
-	TextureManager::setText(CoreManager::getRenderer(), "Press any key to start", 0, 0, 0);
+	TextureManager::setText(CoreManager::getRenderer(), "Press any key to start", 255, 255, 255);
 	text_position = { (C_GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2, (C_GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 2, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 }
@@ -559,13 +591,16 @@ void Snake::render_pass_lost_text()
 
 	std::string buf = "You ate " + std::to_string(apple_counter) + " apples!";
 
-	TextureManager::setText(CoreManager::getRenderer(), buf.c_str(), 0, 0, 0);
-	text_position = { (C_GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2, (C_GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight) / 3, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+	TextureManager::setText(CoreManager::getRenderer(), buf.c_str(), 255, 255, 255);
+	text_position.x = (C_GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
+	text_position.y = 0.4*(C_GAMEAREA_HEIGHT - TextureManager::font.texture.mHeight);
+	text_position.w = TextureManager::font.texture.mWidth;
+	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 
-	TextureManager::setText(CoreManager::getRenderer(), "Press spacebar to play again", 0, 0, 0);
+	TextureManager::setText(CoreManager::getRenderer(), "Press spacebar to play again", 255, 255, 255);
 	text_position.x = (C_GAMEAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
-	text_position.y *= 1.5;
+	text_position.y += 0.15*C_GAMEAREA_HEIGHT;
 	text_position.w = TextureManager::font.texture.mWidth;
 	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
@@ -578,12 +613,32 @@ void Snake::render_pass_highscore_text()
 {
 	CoreManager::SetViewport(&background_area);
 
-	TextureManager::setText(CoreManager::getRenderer(), "High Score", 0, 0, 0);
-	text_position = { 48 * (C_SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 2 * (C_SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+	TextureManager::setText(CoreManager::getRenderer(), "High Score", 255, 255, 255);
+	text_position.x = C_GAMEAREA_WIDTH + (C_SCOREBOARDAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
+	text_position.y = 0.1*TextureManager::font.texture.mHeight;
+	text_position.w = TextureManager::font.texture.mWidth;
+	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 
-	TextureManager::setText(CoreManager::getRenderer(), std::to_string(highscore_counter).c_str(), 0, 0, 0);
-	text_position = { 42 * (C_SCREEN_WIDTH - TextureManager::font.texture.mWidth) / 50, 10 * (C_SCREEN_HEIGHT - TextureManager::font.texture.mHeight) / 50, TextureManager::font.texture.mWidth, TextureManager::font.texture.mHeight };
+	TextureManager::setText(CoreManager::getRenderer(), std::to_string(highscore_counter).c_str(), 255, 255, 255);
+	text_position.x = C_GAMEAREA_WIDTH + (C_SCOREBOARDAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
+	text_position.y += 0.9*TextureManager::font.texture.mHeight;
+	text_position.w = TextureManager::font.texture.mWidth;
+	text_position.h = TextureManager::font.texture.mHeight;
+	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
+
+	TextureManager::setText(CoreManager::getRenderer(), "Your Score", 255, 255, 255);
+	text_position.x = C_GAMEAREA_WIDTH + (C_SCOREBOARDAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
+	text_position.y += 0.9*TextureManager::font.texture.mHeight;
+	text_position.w = TextureManager::font.texture.mWidth;
+	text_position.h = TextureManager::font.texture.mHeight;
+	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
+
+	TextureManager::setText(CoreManager::getRenderer(), std::to_string(apple_counter).c_str(), 255, 255, 255);
+	text_position.x = C_GAMEAREA_WIDTH + (C_SCOREBOARDAREA_WIDTH - TextureManager::font.texture.mWidth) / 2;
+	text_position.y += 0.9*TextureManager::font.texture.mHeight;
+	text_position.w = TextureManager::font.texture.mWidth;
+	text_position.h = TextureManager::font.texture.mHeight;
 	CoreManager::RenderCopy(TextureManager::getFontTexture(), nullptr, &text_position);
 }
 
@@ -609,16 +664,19 @@ void Snake::render()
 	{
 		render_pass_background();
 		render_pass_gamearea();
+		render_pass_text_board();
 		render_pass_instruction_text();
+		render_pass_highscore_board();
 		render_pass_highscore_text();
 		first_game = false;
 	}
 	else {
-		if (render_high_score)
+		if (render_score_board)
 		{
 			render_pass_background();
+			render_pass_highscore_board();
 			render_pass_highscore_text();
-			render_high_score = false;
+			render_score_board = false;
 		}
 
 		render_pass_gamearea();
@@ -626,12 +684,16 @@ void Snake::render()
 		if (!m_hasLost)
 			render_pass_snake();
 
-		if (render_intro_text && m_isPaused)
+		if (render_intro_text)
+		{
+			render_pass_text_board();
 			render_pass_start_text();
+		}
 
 		if (m_hasLost)
 		{
 			render_pass_snake();
+			render_pass_text_board();
 			render_pass_lost_text();
 		}
 
