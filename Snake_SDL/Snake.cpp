@@ -135,10 +135,10 @@ bool Snake::load_media()
 	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_grass_texture))
 		success = false;
 
-	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_board_texture))
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_sprite_texture))
 		success = false;
 
-	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_sprite_texture))
+	if (!TextureManager::loadTexture(CoreManager::getRenderer(), path_to_board_texture))
 		success = false;
 
 	if (!TextureManager::loadFont(path_to_font, 80))
